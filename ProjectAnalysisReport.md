@@ -77,3 +77,28 @@ Nakon toga, ponovo sam pokrenula, ali u trajanju od 30 minut (1800s):
 `Board::load()` je stabilan na proizvoljan ulaz, na osnovu toga što se nije desio nijedan crash ni ASan greška u velikom broju pokušaja.  
 Jedini sumnjiv nalaz (spor ulaz) se pri proveri pokazao kao lažna uzbuna, a ne stvaran problem u kodu.
 
+## Profajliranje (perf)
+
+Originalni CLI program je izgrađen u zasebnom build direktorijumu (`build-perf/`) sa `-O2 -g-fno-omit-frame-pointer`  što daje realne performanse ali tako da perf ima sačuvana imena funkcija kako bi se ispisivao čitljiv graf.
+
+Prvo sam izmerila vreme izvršavanja nad dostupnim primerima sudoku-a:
+ * easy: 211 backtrack-ova, real time: 0.007s
+ * hard: 318439 backtrack-ova, real time: 0.031s
+ * world haredst: 72015 backtrack-ova, real time: 0.009s
+ * anti backtracking: 88178481 backtrack-ova, real time 9.280s
+
+Za ulaz je korišćen sudoku primer `anti_backtracking.txt`, jer je vremenski najzahtevniji.
+
+Uporedila sam dva perf run-a: probni na `hard.txt` koji daje 133 uzorka i glavni run na `anti_backtracking.txt` koji daje 40K uzorka. 
+
+### Očekivanja
+Očekuje se da će usko grlo biti `backtrack()` funkcija, jer rekurzija nosi veliku složenost. Zanimljivo je analizirati koliki deo tog troška ide na logiku unutar rekurzije `isRowInsertionValid`, `isColumnInsertionValid` i `isSquareInsertionValid` jer se te funkcije se pozivaju pri svakom
+pokušaju upisivanja vrednosti. 
+
+### Rezultati
+Ceo izveštaj se može naći u fajlu `anti_backtracking.report`. 
+                                                                
+* Skoro sav trošak programa je pripisan funkciji `Board::backtrack()`. Ona nosi 99.98% Children i 99.39% Self vremena (linija 688)
+* `Board::isTileInsertionValid()` (linija 1139) i `Board::isRowInsertionValid()` (linija 1144) su označene sa `(inlined)`, svaka sa 37.06% Children i 0.00% Self
+* `Board::translate()` (linija 1155), `std::vector<Tile>::size()` (linija 1159) i `std::vector<Tile>::operator[]()` (linija 1162) su takođe inlinovane, svaka sa manje od 0.4% Children
+* Znači validacione funkcije jesu trošile vreme. Zbog optimizacije ih je kompajler ubacio u telo `backtrack()`, pa na mašinskom nivou  ne postoje kao odvojeni pozivi
