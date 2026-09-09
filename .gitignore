@@ -1,4 +1,7 @@
 build/
+build-coverage/
+fuzzing/fuzz_board_load
+fuzzing/*.o
 *.o
 *.a
 *.so
