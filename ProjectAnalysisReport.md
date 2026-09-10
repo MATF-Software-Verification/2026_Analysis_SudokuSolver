@@ -39,7 +39,7 @@ Reprodukcija:
 xdg-open unit_tests/coverage/index.html
 ```
 
-## Fuzz testiranje (libFuzzer)
+## 2. Fuzz testiranje (libFuzzer)
 
 Kao drugi alat u analizi korišćen je **libFuzzer**, coverage-guided fuzzer koji dolazi uz Clang. 
 Fuzzing, za razliku od jediničnih testova, sam generiše veliki broj nasumičnih ulaza i prati koje linije koda su pogodili. 
@@ -77,7 +77,7 @@ Nakon toga, ponovo sam pokrenula, ali u trajanju od 30 minut (1800s):
 `Board::load()` je stabilan na proizvoljan ulaz, na osnovu toga što se nije desio nijedan crash ni ASan greška u velikom broju pokušaja.  
 Jedini sumnjiv nalaz (spor ulaz) se pri proveri pokazao kao lažna uzbuna, a ne stvaran problem u kodu.
 
-## Profajliranje (perf)
+## 3. Profajliranje (perf)
 
 Originalni CLI program je izgrađen u zasebnom build direktorijumu (`build-perf/`) sa `-O2 -g-fno-omit-frame-pointer`  što daje realne performanse ali tako da perf ima sačuvana imena funkcija kako bi se ispisivao čitljiv graf.
 
@@ -102,3 +102,12 @@ Ceo izveštaj se može naći u fajlu `anti_backtracking.report`.
 * `Board::isTileInsertionValid()` (linija 1139) i `Board::isRowInsertionValid()` (linija 1144) su označene sa `(inlined)`, svaka sa 37.06% Children i 0.00% Self
 * `Board::translate()` (linija 1155), `std::vector<Tile>::size()` (linija 1159) i `std::vector<Tile>::operator[]()` (linija 1162) su takođe inlinovane, svaka sa manje od 0.4% Children
 * Znači validacione funkcije jesu trošile vreme. Zbog optimizacije ih je kompajler ubacio u telo `backtrack()`, pa na mašinskom nivou  ne postoje kao odvojeni pozivi
+
+## 4. Clang Static Analyzer (scan-builder)
+
+Kao prvi alat statičke analize korišćen je scan-build koji je deo clang paketa. Scan-build je pokrenut nad celim projektom.
+
+**Rezultat**: `No bugs found`  
+Ovo je očekivano jer je projekat mali (sadrži dva .cpp fajla), ne korsti dinamičku alokaciju, nema složenih grananja. Tekstualni izlaz komande sačuvan je u scan-build.log
+
+**Reprodukcija**: `./static-analysis/scan-build/run_scan_build.sh`

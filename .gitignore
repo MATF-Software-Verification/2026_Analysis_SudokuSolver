@@ -1,6 +1,5 @@
 build/
-build-coverage/
-build-perf/
+build-*/
 fuzzing/fuzz_board_load
 fuzzing/*.o
 *.o
