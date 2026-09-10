@@ -108,6 +108,27 @@ Ceo izveštaj se može naći u fajlu `anti_backtracking.report`.
 Kao prvi alat statičke analize korišćen je scan-build koji je deo clang paketa. Scan-build je pokrenut nad celim projektom.
 
 **Rezultat**: `No bugs found`  
-Ovo je očekivano jer je projekat mali (sadrži dva .cpp fajla), ne korsti dinamičku alokaciju, nema složenih grananja. Tekstualni izlaz komande sačuvan je u scan-build.log
+Ovo je očekivano jer je projekat mali (sadrži dva .cpp fajla), ne korsti dinamičku alokaciju, nema složenih grananja. 
+Tekstualni izlaz komande sačuvan je u `static-analysis/scan-build/scan-build.log`
 
 **Reprodukcija**: `./static-analysis/scan-build/run_scan_build.sh`
+
+## 5. cppcheck
+
+Drugi alat koji je koršćen za statičku analizu je cppcheck. Ovaj alat ne kompajlira kod. 
+
+Pokrenut je sa sledećim opcijama:
+* `--enable=all` kako bi se pokrila šira slika (ne samo errori) već i style, performance, portability i warning kategorije. 
+* `--inconclusive` kako bi se uzeli u obzir i potencijalni  problemi u koje alat nije 100% siguran
+* `--std=c++14` zbog sintakse, projekat je pisan u C++14 
+* `--force` garantuje potpunu pokrivenost, a kako je ovo mali projekat to nije problem
+* `--suppress=missingIncludeSystem` da se uklone zaglavlja poput <vestot>, <string> koja cppcheck ne ume da razreši 
+
+**Rezultat**: 4 zapažanja
+* `functionStatic` -  Board::getRow, Board::getColumn i Board::translate ne koriste nijedan član klase, pa mogu biti statičke
+* `constVariableReference` -  u Board.cpp:41, promenljiva c u for (auto &c : buffer) se ne menja, pa bi trebalo da bude const auto &c.
+
+Rezultat se može pročitati u: `static-analysis/cppcheck/report.txt`
+
+**Reprodukcija**
+`./static-analysis/cppcheck/run_cppcheck.sh`

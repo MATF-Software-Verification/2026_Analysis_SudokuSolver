@@ -1,0 +1,35 @@
+SudokuSolver/engine/src/Board.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+SudokuSolver/engine/src/Board.cpp:218:25: style: The member function 'Board::getRow' can be static. [functionStatic]
+inline const row Board::getRow(const unsigned &index, const unsigned int &width) const
+                        ^
+SudokuSolver/engine/include/Board.h:26:19: note: The member function 'Board::getRow' can be static.
+ inline const row getRow(const unsigned int &index, const unsigned int &width) const;
+                  ^
+SudokuSolver/engine/src/Board.cpp:218:25: note: The member function 'Board::getRow' can be static.
+inline const row Board::getRow(const unsigned &index, const unsigned int &width) const
+                        ^
+SudokuSolver/engine/src/Board.cpp:223:28: style: The member function 'Board::getColumn' can be static. [functionStatic]
+inline const column Board::getColumn(const unsigned int &index, const unsigned int &width) const
+                           ^
+SudokuSolver/engine/include/Board.h:27:22: note: The member function 'Board::getColumn' can be static.
+ inline const column getColumn(const unsigned int &index, const unsigned int &width) const;
+                     ^
+SudokuSolver/engine/src/Board.cpp:223:28: note: The member function 'Board::getColumn' can be static.
+inline const column Board::getColumn(const unsigned int &index, const unsigned int &width) const
+                           ^
+SudokuSolver/engine/src/Board.cpp:213:34: style: The member function 'Board::translate' can be static. [functionStatic]
+inline const unsigned int Board::translate(const column &c, const row &r, const unsigned int &width) const
+                                 ^
+SudokuSolver/engine/include/Board.h:30:28: note: The member function 'Board::translate' can be static.
+ inline const unsigned int translate(const column &c, const row &r, const unsigned int &width) const;
+                           ^
+SudokuSolver/engine/src/Board.cpp:213:34: note: The member function 'Board::translate' can be static.
+inline const unsigned int Board::translate(const column &c, const row &r, const unsigned int &width) const
+                                 ^
+SudokuSolver/engine/src/Board.cpp:41:13: style: Variable 'c' can be declared as reference to const [constVariableReference]
+ for (auto &c : buffer)
+            ^
+nofile:0:0: information: Active checkers: 183/186 (use --checkers-report=<filename> to see details) [checkersReport]
+
