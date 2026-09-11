@@ -1,0 +1,449 @@
+[1/3] Processing file /home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp.
+5788 warnings generated.
+[2/3] Processing file /home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/SolveResult.cpp.
+5790 warnings generated.
+[3/3] Processing file /home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp.
+10544 warnings generated.
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:6:5: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+    6 | int main(int argc, char** argv)
+      | ~~~ ^                          
+      | auto                            -> int
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:16:17: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   16 |                         std::cout << std::endl << std::endl;
+      |                                      ^~~~~~~~~
+      |                                      '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:16:30: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   16 |                         std::cout << std::endl << std::endl;
+      |                                                   ^~~~~~~~~
+      |                                                   '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:24:34: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   24 |                                 std::cout << "solving..." << std::endl << std::endl;
+      |                                                              ^~~~~~~~~
+      |                                                              '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:24:47: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   24 |                                 std::cout << "solving..." << std::endl << std::endl;
+      |                                                                           ^~~~~~~~~
+      |                                                                           '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:34:19: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   34 |                                         std::cout << std::endl;
+      |                                                      ^~~~~~~~~
+      |                                                      '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:35:67: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   35 |                                         std::cout << "solved in " << elapsedMilliseconds << " ms" << std::endl;
+      |                                                                                                      ^~~~~~~~~
+      |                                                                                                      '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:36:63: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   36 |                                         std::cout << "with backtracks: " << result.backtracks << std::endl;
+      |                                                                                                  ^~~~~~~~~
+      |                                                                                                  '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:42:40: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   42 |                                 std::cout << "is not solveable" << std::endl;
+      |                                                                    ^~~~~~~~~
+      |                                                                    '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:47:49: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   47 |                         std::cout << "could not load " << argv[1] << std::endl;
+      |                                                                      ^~~~~~~~~
+      |                                                                      '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/app/src/Main.cpp:50:46: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+   50 |                 std::cout << "press any key to exit..." << std::endl;
+      |                                                            ^~~~~~~~~
+      |                                                            '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:10:1: warning: use 'using' instead of 'typedef' [modernize-use-using]
+   10 | typedef unsigned int row;
+      | ^~~~~~~~~~~~~~~~~~~~~~~~
+      | using row = unsigned int
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:11:1: warning: use 'using' instead of 'typedef' [modernize-use-using]
+   11 | typedef unsigned int column;
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+      | using column = unsigned int
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:12:1: warning: use 'using' instead of 'typedef' [modernize-use-using]
+   12 | typedef unsigned int square;
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~
+      | using square = unsigned int
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:13:1: warning: use 'using' instead of 'typedef' [modernize-use-using]
+   13 | typedef unsigned int tile_index;
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      | using tile_index = unsigned int
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:21:7: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   21 |         bool load(const std::string &path);
+      |         ~~~~ ^                            
+      |         auto                               -> bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:22:14: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   22 |         SolveResult solve();
+      |         ~~~~~~~~~~~ ^      
+      |         auto                -> SolveResult
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:23:13: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   23 |         const bool isSolveable() const;
+      |         ~~~~~~~~~~ ^                  
+      |         auto                           -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:26:19: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   26 |         inline const row getRow(const unsigned int &index, const unsigned int &width) const;
+      |                ~~~~~~~~~ ^                                                                 
+      |                auto                                                                         -> const row
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:27:22: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   27 |         inline const column getColumn(const unsigned int &index, const unsigned int &width) const;
+      |                ~~~~~~~~~~~~ ^                                                                    
+      |                auto                                                                               -> const column
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:28:22: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   28 |         inline const square getTileSquare(const tile_index &index) const;
+      |                ~~~~~~~~~~~~ ^                                           
+      |                auto                                                      -> const square
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:29:22: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   29 |         inline const square getTileSquare(const column &c, const row &r) const;
+      |                ~~~~~~~~~~~~ ^                                                 
+      |                auto                                                            -> const square
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:29:50: warning: parameter name 'c' is too short, expected at least 3 characters [readability-identifier-length]
+   29 |         inline const square getTileSquare(const column &c, const row &r) const;
+      |                                                         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:29:64: warning: parameter name 'r' is too short, expected at least 3 characters [readability-identifier-length]
+   29 |         inline const square getTileSquare(const column &c, const row &r) const;
+      |                                                                       ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:30:28: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   30 |         inline const unsigned int translate(const column &c, const row &r, const unsigned int &width) const;
+      |                ~~~~~~~~~~~~~~~~~~ ^                                                                        
+      |                auto                                                                                         -> const unsigned int
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:30:52: warning: parameter name 'c' is too short, expected at least 3 characters [readability-identifier-length]
+   30 |         inline const unsigned int translate(const column &c, const row &r, const unsigned int &width) const;
+      |                                                           ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:30:66: warning: parameter name 'r' is too short, expected at least 3 characters [readability-identifier-length]
+   30 |         inline const unsigned int translate(const column &c, const row &r, const unsigned int &width) const;
+      |                                                                         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:37:14: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   37 |         SolveResult backtrack(tile_index index, SolveResult &result);
+      |         ~~~~~~~~~~~ ^                                               
+      |         auto                                                         -> SolveResult
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:39:20: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   39 |         inline const bool isTileInsertionValid(const tile_index &index) const;
+      |                ~~~~~~~~~~ ^                                                  
+      |                auto                                                           -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:40:20: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   40 |         inline const bool isRowInsertionValid(const tile_index& index) const;
+      |                ~~~~~~~~~~ ^                                                 
+      |                auto                                                          -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:41:20: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   41 |         inline const bool isColumnInsertionValid(const tile_index& index) const;
+      |                ~~~~~~~~~~ ^                                                    
+      |                auto                                                             -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/Board.h:42:20: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   42 |         inline const bool isSquareInsertionValid(const tile_index& index) const;
+      |                ~~~~~~~~~~ ^                                                    
+      |                auto                                                             -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/SolveResult.h:7:15: warning: use default member initializer for 'backtracks' [modernize-use-default-member-init]
+    7 |         unsigned int backtracks;
+      |                      ^         
+      |                                {0}
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/SolveResult.h:8:7: warning: use default member initializer for 'solved' [modernize-use-default-member-init]
+    8 |         bool solved;
+      |              ^     
+      |                    {false}
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/TileStatus.h:3:12: warning: enum 'TileStatus' uses a larger base type ('int', size: 4 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+    3 | enum class TileStatus
+      |            ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/include/TileValue.h:3:12: warning: enum 'TileValue' uses a larger base type ('int', size: 4 bytes) than necessary for its value set, consider using 'std::uint8_t' (1 byte) as the base type to reduce its size [performance-enum-size]
+    3 | enum class TileValue
+      |            ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:10:16: warning: 81 is a magic number; consider replacing it with a named constant [readability-magic-numbers]
+   10 |         _tiles.resize(81);
+      |                       ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:18:13: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   18 | bool Board::load(const std::string &path)
+      | ~~~~        ^                            
+      | auto                                      -> bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:23:14: warning: statement should be inside braces [readability-braces-around-statements]
+   23 |         if (!stream)
+      |                     ^
+      |                      {
+   24 |                 return false;
+      |                              
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:29:14: warning: 'data' should be used for accessing the data pointer instead of taking the address of the 0-th element [readability-container-data-pointer]
+   29 |         stream.read(&buffer[0], buffer.size());
+      |                     ^~~~~~~~~~
+      |                     buffer.data()
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:29:26: warning: narrowing conversion from 'size_type' (aka 'unsigned long') to signed type 'streamsize' (aka 'long') is implementation-defined [bugprone-narrowing-conversions]
+   29 |         stream.read(&buffer[0], buffer.size());
+      |                                 ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:36:23: warning: 81 is a magic number; consider replacing it with a named constant [readability-magic-numbers]
+   36 |         if (buffer.size() != 81)
+      |                              ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:36:26: warning: statement should be inside braces [readability-braces-around-statements]
+   36 |         if (buffer.size() != 81)
+      |                                 ^
+      |                                  {
+   37 |                 return false;
+      |                              
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:41:13: warning: variable name 'c' is too short, expected at least 3 characters [readability-identifier-length]
+   41 |         for (auto &c : buffer)
+      |                    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:43:8: warning: variable name 't' is too short, expected at least 3 characters [readability-identifier-length]
+   43 |                 auto t = Tile{};
+      |                      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:44:13: warning: C-style casts are discouraged; use static_cast [modernize-avoid-c-style-cast]
+   44 |                 t.value = (TileValue)(c - '0');
+      |                           ^~~~~~~~~~~
+      |                           static_cast<TileValue>
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:46:35: warning: statement should be inside braces [readability-braces-around-statements]
+   46 |                 if (t.value == TileValue::Empty)
+      |                                                 ^
+      |                                                  {
+   47 |                         t.status = TileStatus::Empty;
+   48 |                 else
+      |                 } 
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:48:7: warning: statement should be inside braces [readability-braces-around-statements]
+   48 |                 else
+      |                     ^
+      |                      {
+   49 |                         t.status = TileStatus::Solved;
+      |                                                       
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:58:1: warning: return type 'const bool' is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+   58 | const bool Board::isSolveable() const
+      | ^~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:58:19: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   58 | const bool Board::isSolveable() const
+      | ~~~~~~~~~~        ^                  
+      | auto                                  -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:62:73: warning: statement should be inside braces [readability-braces-around-statements]
+   62 |                 if (_tiles[i].status != TileStatus::Empty && !isTileInsertionValid(i))
+      |                                                                                       ^
+      |                                                                                        {
+   63 |                         return false;
+      |                                      
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:69:20: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   69 | SolveResult Board::solve()
+      | ~~~~~~~~~~~        ^      
+      | auto                       -> SolveResult
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:72:20: warning: statement should be inside braces [readability-braces-around-statements]
+   72 |         if (isSolveable())
+      |                           ^
+      |                            {
+   73 |                 return backtrack(0, result);
+   74 |         else
+      |         } 
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:74:2: warning: do not use 'else' after 'return' [readability-else-after-return]
+   74 |         else
+      |         ^~~~
+      |                         return result
+   75 |                 return result;
+      |                 ~~~~~~~~~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:74:6: warning: statement should be inside braces [readability-braces-around-statements]
+note: this fix will not be applied because it overlaps with another fix
+   74 |         else
+      |             ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:78:20: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+   78 | SolveResult Board::backtrack(tile_index index, SolveResult &result)
+      | ~~~~~~~~~~~        ^                                               
+      | auto                                                                -> SolveResult
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:90:26: warning: C-style casts are discouraged; use static_cast [modernize-avoid-c-style-cast]
+   90 |                         _tiles[index].value = (TileValue)(i + 1);
+      |                                               ^~~~~~~~~~~
+      |                                               static_cast<TileValue>
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:95:10: warning: variable name 'r' is too short, expected at least 3 characters [readability-identifier-length]
+   95 |                                 auto r = backtrack(index + 1, result);
+      |                                      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:96:18: warning: statement should be inside braces [readability-braces-around-statements]
+   96 |                                 if (r.solved)
+      |                                              ^
+      |                                               {
+   97 |                                         return r;
+      |                                                  
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:106:8: warning: variable name 'r' is too short, expected at least 3 characters [readability-identifier-length]
+  106 |                 auto r = backtrack(index + 1, result);
+      |                      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:107:16: warning: statement should be inside braces [readability-braces-around-statements]
+  107 |                 if (r.solved)
+      |                              ^
+      |                               {
+  108 |                         return r;
+      |                                  
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:116:1: warning: return type 'const bool' is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+  116 | inline const bool Board::isTileInsertionValid(const tile_index &index) const
+      | ^      ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:116:26: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+  116 | inline const bool Board::isTileInsertionValid(const tile_index &index) const
+      |        ~~~~~~~~~~        ^                                                  
+      |        auto                                                                  -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:123:1: warning: return type 'const bool' is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+  123 | inline const bool Board::isRowInsertionValid(const tile_index& index) const
+      | ^      ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:123:26: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+  123 | inline const bool Board::isRowInsertionValid(const tile_index& index) const
+      |        ~~~~~~~~~~        ^                                                 
+      |        auto                                                                 -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:129:14: warning: loop variable name 'c' is too short, expected at least 2 characters [readability-identifier-length]
+  129 |         for (column c = 0; c < Board::SIZE; ++c)
+      |                     ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:133:9: warning: variable name 'i' is too short, expected at least 3 characters [readability-identifier-length]
+  133 |                         auto i = translate(c, tileRow, Board::SIZE);
+      |                              ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:134:38: warning: statement should be inside braces [readability-braces-around-statements]
+  134 |                         if (_tiles[i].value == tile.value)
+      |                                                           ^
+      |                                                            {
+  135 |                                 return false;
+      |                                              
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:142:1: warning: return type 'const bool' is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+  142 | inline const bool Board::isColumnInsertionValid(const tile_index& index) const
+      | ^      ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:142:26: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+  142 | inline const bool Board::isColumnInsertionValid(const tile_index& index) const
+      |        ~~~~~~~~~~        ^                                                    
+      |        auto                                                                    -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:148:11: warning: loop variable name 'r' is too short, expected at least 2 characters [readability-identifier-length]
+  148 |         for (row r = 0; r < Board::SIZE; ++r)
+      |                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:152:9: warning: variable name 'i' is too short, expected at least 3 characters [readability-identifier-length]
+  152 |                         auto i = translate(tileColumn, r, Board::SIZE);
+      |                              ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:153:38: warning: statement should be inside braces [readability-braces-around-statements]
+  153 |                         if (_tiles[i].value == tile.value)
+      |                                                           ^
+      |                                                            {
+  154 |                                 return false;
+      |                                              
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:161:1: warning: return type 'const bool' is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+  161 | inline const bool Board::isSquareInsertionValid(const tile_index& index) const
+      | ^      ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:161:26: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+  161 | inline const bool Board::isSquareInsertionValid(const tile_index& index) const
+      |        ~~~~~~~~~~        ^                                                    
+      |        auto                                                                    -> const bool
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:169:19: warning: '*' has higher precedence than '-'; add parentheses to explicitly specify the order of operations [readability-math-missing-parentheses]
+  169 |         auto maxColumn = (squareColumn + 1) * Board::SQUARE_SIZE - 1;
+      |                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                          (                                      )
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:171:16: warning: '*' has higher precedence than '-'; add parentheses to explicitly specify the order of operations [readability-math-missing-parentheses]
+  171 |         auto maxRow = (squareRow + 1) * Board::SQUARE_SIZE - 1;
+      |                       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      |                       (                                   )
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:173:11: warning: loop variable name 'r' is too short, expected at least 2 characters [readability-identifier-length]
+  173 |         for (row r = minRow; r <= maxRow; ++r)
+      |                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:175:15: warning: loop variable name 'c' is too short, expected at least 2 characters [readability-identifier-length]
+  175 |                 for (column c = minColumn; c <= maxColumn; ++c)
+      |                             ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:177:9: warning: variable name 'i' is too short, expected at least 3 characters [readability-identifier-length]
+  177 |                         auto i = translate(c, r, Board::SIZE);
+      |                              ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:178:52: warning: statement should be inside braces [readability-braces-around-statements]
+  178 |                         if (i != index && _tiles[i].value == tile.value)
+      |                                                                         ^
+      |                                                                          {
+  179 |                                 return false;
+      |                                              
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:188:11: warning: loop variable name 'r' is too short, expected at least 2 characters [readability-identifier-length]
+  188 |         for (row r = 0; r < Board::SIZE; r++)
+      |                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:190:16: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+  190 |                 std::cout << std::endl;
+      |                              ^~~~~~~~~
+      |                              '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:192:15: warning: loop variable name 'c' is too short, expected at least 2 characters [readability-identifier-length]
+  192 |                 for (column c = 0; c < Board::SIZE; c++)
+      |                             ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:195:74: warning: C-style casts are discouraged; use static_cast [modernize-avoid-c-style-cast]
+  195 |                         auto value = tile.value == TileValue::Empty ? '-' : static_cast<char>((int)tile.value + 48);
+      |                                                                                               ^~~~~
+      |                                                                                               static_cast<int>( )
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:195:92: warning: 48 is a magic number; consider replacing it with a named constant [readability-magic-numbers]
+  195 |                         auto value = tile.value == TileValue::Empty ? '-' : static_cast<char>((int)tile.value + 48);
+      |                                                                                                                 ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:199:66: warning: statement should be inside braces [readability-braces-around-statements]
+  199 |                         if ((c + 1) % Board::SQUARE_SIZE == 0 && c != Board::SIZE - 1)
+      |                                                                                       ^
+      |                                                                                        {
+  200 |                                 std::cout << "|";
+      |                                                  
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:203:16: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+  203 |                 std::cout << std::endl;
+      |                              ^~~~~~~~~
+      |                              '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:207:29: warning: 38 is a magic number; consider replacing it with a named constant [readability-magic-numbers]
+  207 |                         std::cout << std::string(38, '_') << std::endl;
+      |                                                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:207:41: warning: do not use 'std::endl' with streams; use '\n' instead [performance-avoid-endl]
+  207 |                         std::cout << std::string(38, '_') << std::endl;
+      |                                                              ^~~~~~~~~
+      |                                                              '\n'
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:213:1: warning: return type 'const unsigned int' is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+  213 | inline const unsigned int Board::translate(const column &c, const row &r, const unsigned int &width) const
+      | ^      ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:213:34: warning: method 'translate' can be made static [readability-convert-member-functions-to-static]
+  213 | inline const unsigned int Board::translate(const column &c, const row &r, const unsigned int &width) const
+      |                                  ^                                                                   ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:213:34: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+  213 | inline const unsigned int Board::translate(const column &c, const row &r, const unsigned int &width) const
+      |        ~~~~~~~~~~~~~~~~~~        ^                                                                        
+      |        auto                                                                                                -> const unsigned int
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:213:58: warning: parameter name 'c' is too short, expected at least 3 characters [readability-identifier-length]
+  213 | inline const unsigned int Board::translate(const column &c, const row &r, const unsigned int &width) const
+      |                                                          ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:213:72: warning: parameter name 'r' is too short, expected at least 3 characters [readability-identifier-length]
+  213 | inline const unsigned int Board::translate(const column &c, const row &r, const unsigned int &width) const
+      |                                                                        ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:215:9: warning: '*' has higher precedence than '+'; add parentheses to explicitly specify the order of operations [readability-math-missing-parentheses]
+  215 |         return r * width + c;
+      |                ^~~~~~~~~
+      |                (        )
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:218:1: warning: return type 'const row' (aka 'const unsigned int') is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+  218 | inline const row Board::getRow(const unsigned &index, const unsigned int &width) const
+      | ^      ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:218:25: warning: method 'getRow' can be made static [readability-convert-member-functions-to-static]
+  218 | inline const row Board::getRow(const unsigned &index, const unsigned int &width) const
+      |                         ^                                                        ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:218:25: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+  218 | inline const row Board::getRow(const unsigned &index, const unsigned int &width) const
+      |        ~~~~~~~~~        ^                                                             
+      |        auto                                                                            -> const row
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:223:1: warning: return type 'const column' (aka 'const unsigned int') is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+  223 | inline const column Board::getColumn(const unsigned int &index, const unsigned int &width) const
+      | ^      ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:223:28: warning: method 'getColumn' can be made static [readability-convert-member-functions-to-static]
+  223 | inline const column Board::getColumn(const unsigned int &index, const unsigned int &width) const
+      |                            ^                                                               ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:223:28: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+  223 | inline const column Board::getColumn(const unsigned int &index, const unsigned int &width) const
+      |        ~~~~~~~~~~~~        ^                                                                    
+      |        auto                                                                                      -> const column
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:228:1: warning: return type 'const square' (aka 'const unsigned int') is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+  228 | inline const square Board::getTileSquare(const column &c, const row &r) const
+      | ^      ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:228:28: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+  228 | inline const square Board::getTileSquare(const column &c, const row &r) const
+      |        ~~~~~~~~~~~~        ^                                                 
+      |        auto                                                                   -> const square
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:228:42: warning: 2 adjacent parameters of 'getTileSquare' of similar type are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  228 | inline const square Board::getTileSquare(const column &c, const row &r) const
+      |                                          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:228:56: note: the first parameter in the range is 'c'
+  228 | inline const square Board::getTileSquare(const column &c, const row &r) const
+      |                                                        ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:228:70: note: the last parameter in the range is 'r'
+  228 | inline const square Board::getTileSquare(const column &c, const row &r) const
+      |                                                                      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:228:42: note: after resolving type aliases, the common type of 'const column &' and 'const row &' is 'const unsigned int &'
+  228 | inline const square Board::getTileSquare(const column &c, const row &r) const
+      |                                          ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:228:56: warning: parameter name 'c' is too short, expected at least 3 characters [readability-identifier-length]
+  228 | inline const square Board::getTileSquare(const column &c, const row &r) const
+      |                                                        ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:228:70: warning: parameter name 'r' is too short, expected at least 3 characters [readability-identifier-length]
+  228 | inline const square Board::getTileSquare(const column &c, const row &r) const
+      |                                                                      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:236:1: warning: return type 'const square' (aka 'const unsigned int') is 'const'-qualified at the top level, which may reduce code readability without improving const correctness [readability-const-return-type]
+note: this fix will not be applied because it overlaps with another fix
+  236 | inline const square Board::getTileSquare(const tile_index &index) const
+      | ^      ~~~~~
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:236:28: warning: use a trailing return type for this function [modernize-use-trailing-return-type]
+  236 | inline const square Board::getTileSquare(const tile_index &index) const
+      |        ~~~~~~~~~~~~        ^                                           
+      |        auto                                                             -> const square
+Suppressed 10412 warnings (10412 in non-user code).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.

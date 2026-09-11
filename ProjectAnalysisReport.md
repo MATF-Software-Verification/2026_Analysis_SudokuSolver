@@ -132,3 +132,32 @@ Rezultat se može pročitati u: `static-analysis/cppcheck/report.txt`
 
 **Reprodukcija**
 `./static-analysis/cppcheck/run_cppcheck.sh`
+
+## 6. clang-tidy
+
+Treći alat statičke analize je clang-tidy. Ovaj alat kompajlira kod (koristi compile_commands.json, argument pri kompilacji -DCMAKE_EXPORT_COMPILE_COMMANDS=ON)
+
+Konfigurisan je preko `.clang-tidy` fajla, sa sledećim grupama provera:
+* `bugprone-*` – sumnjivi obrasci koji često dovode do bagova
+* `performance-*` – neefikasan kod
+* `modernize-*` – zastareo stil, mogao bi da koristi noviji C++
+* `readability-*` – čitljivost koda
+
+Pokrenut je nad `Board.cpp`, `SolveResult.cpp` i `Main.cpp`.
+
+**Rezultat**: 109 upozorenja u korisničkom kodu. Alat je izostavio 10412 upozorenja iz sistemskih header-a, koja nisu relevantna.
+
+Najčešće kategorije:
+* `modernize-use-trailing-return-type` - stilska preporuka, ne utiče na ispravnost
+* `readability-identifier-length` - imena parametara kao `c`, `r` prekratka (< 3 karaktera)
+* `readability-braces-around-statements` - predlagaže vitičaste zagrade 
+* `performance-avoid-endl` - korišćenje `std::endl` umesto `\n`
+
+Vredniji nalazi:
+* `bugprone-easily-swappable-parameters` u `Board::getTileSquare(column c, row r)` (Board.cpp:228). Column i row su samo alijasi za unsigned int, pa tip ne štiti od zamene mesta argumentima, a  to bila logička greška. 
+* `bugprone-narrowing-conversions` (Board.cpp:29) konverzija iz 'size_type' u signed type streamsize zavisi od implementacije 
+
+**Reprodukcija**
+```bash
+./static-analysis/clang-tidy/run_clang_tidy.sh
+```
