@@ -1,0 +1,252 @@
+[info] Killed mutants (62/83):
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:29:33: warning: Killed: Replaced size with 42 [cxx_replace_scalar_call]
+	stream.read(&buffer[0], buffer.size());
+	                               ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:36:13: warning: Killed: Replaced size with 42 [cxx_replace_scalar_call]
+	if (buffer.size() != 81)
+	           ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:36:20: warning: Killed: Replaced != with == [cxx_ne_to_eq]
+	if (buffer.size() != 81)
+	                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:44:27: warning: Killed: Replaced - with + [cxx_sub_to_add]
+		t.value = (TileValue)(c - '0');
+		                        ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:46:15: warning: Killed: Replaced == with != [cxx_eq_to_ne]
+		if (t.value == TileValue::Empty)
+		            ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:60:29: warning: Killed: Replaced < with >= [cxx_lt_to_ge]
+	for (unsigned int i = 0; i < _tiles.size(); i++)
+	                           ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:60:29: warning: Killed: Replaced < with <= [cxx_lt_to_le]
+	for (unsigned int i = 0; i < _tiles.size(); i++)
+	                           ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:62:24: warning: Killed: Replaced != with == [cxx_ne_to_eq]
+		if (_tiles[i].status != TileStatus::Empty && !isTileInsertionValid(i))
+		                     ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:62:49: warning: Killed: Replaced isTileInsertionValid(i) with 42 [cxx_replace_scalar_call]
+		if (_tiles[i].status != TileStatus::Empty && !isTileInsertionValid(i))
+		                                              ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:72:6: warning: Killed: Replaced isSolveable() with 42 [cxx_replace_scalar_call]
+	if (isSolveable())
+	    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:88:30: warning: Killed: Replaced < with >= [cxx_lt_to_ge]
+		for (unsigned int i = 0; i < Board::SIZE; ++i)
+		                           ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:90:40: warning: Killed: Replaced + with - [cxx_add_to_sub]
+			_tiles[index].value = (TileValue)(i + 1);
+			                                    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:93:8: warning: Killed: Replaced isTileInsertionValid(index) with 42 [cxx_replace_scalar_call]
+			if (isTileInsertionValid(index))
+			    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:95:30: warning: Killed: Replaced + with - [cxx_add_to_sub]
+				auto r = backtrack(index + 1, result);
+				                         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:106:28: warning: Killed: Replaced + with - [cxx_add_to_sub]
+		auto r = backtrack(index + 1, result);
+		                         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:118:9: warning: Killed: Replaced isRowInsertionValid(index) with 42 [cxx_replace_scalar_call]
+	return isRowInsertionValid(index)
+	       ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:119:6: warning: Killed: Replaced isColumnInsertionValid(index) with 42 [cxx_replace_scalar_call]
+		&& isColumnInsertionValid(index)
+		   ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:120:6: warning: Killed: Replaced isSquareInsertionValid(index) with 42 [cxx_replace_scalar_call]
+		&& isSquareInsertionValid(index);
+		   ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:126:17: warning: Killed: Replaced getRow(index, Board::SIZE) with 42 [cxx_replace_scalar_call]
+	auto tileRow = getRow(index, Board::SIZE);
+	               ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:127:20: warning: Killed: Replaced getColumn(index, Board::SIZE) with 42 [cxx_replace_scalar_call]
+	auto tileColumn = getColumn(index, Board::SIZE);
+	                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:129:23: warning: Killed: Replaced < with <= [cxx_lt_to_le]
+	for (column c = 0; c < Board::SIZE; ++c)
+	                     ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:131:9: warning: Killed: Replaced != with == [cxx_ne_to_eq]
+		if (c != tileColumn)
+		      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:133:13: warning: Killed: Replaced translate(c, tileRow, Board::SIZE) with 42 [cxx_replace_scalar_call]
+			auto i = translate(c, tileRow, Board::SIZE);
+			         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:134:24: warning: Killed: Replaced == with != [cxx_eq_to_ne]
+			if (_tiles[i].value == tile.value)
+			                    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:145:17: warning: Killed: Replaced getRow(index, Board::SIZE) with 42 [cxx_replace_scalar_call]
+	auto tileRow = getRow(index, Board::SIZE);
+	               ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:146:20: warning: Killed: Replaced getColumn(index, Board::SIZE) with 42 [cxx_replace_scalar_call]
+	auto tileColumn = getColumn(index, Board::SIZE);
+	                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:148:20: warning: Killed: Replaced < with <= [cxx_lt_to_le]
+	for (row r = 0; r < Board::SIZE; ++r)
+	                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:150:9: warning: Killed: Replaced != with == [cxx_ne_to_eq]
+		if (r != tileRow)
+		      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:152:13: warning: Killed: Replaced translate(tileColumn, r, Board::SIZE) with 42 [cxx_replace_scalar_call]
+			auto i = translate(tileColumn, r, Board::SIZE);
+			         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:153:24: warning: Killed: Replaced == with != [cxx_eq_to_ne]
+			if (_tiles[i].value == tile.value)
+			                    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:164:21: warning: Killed: Replaced getTileSquare(index) with 42 [cxx_replace_scalar_call]
+	auto squareIndex = getTileSquare(index);
+	                   ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:165:22: warning: Killed: Replaced getColumn(squareIndex, Board::SQUARE_SIZE) with 42 [cxx_replace_scalar_call]
+	auto squareColumn = getColumn(squareIndex, Board::SQUARE_SIZE);
+	                    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:166:19: warning: Killed: Replaced getRow(squareIndex, Board::SQUARE_SIZE) with 42 [cxx_replace_scalar_call]
+	auto squareRow = getRow(squareIndex, Board::SQUARE_SIZE);
+	                 ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:168:32: warning: Killed: Replaced * with / [cxx_mul_to_div]
+	auto minColumn = squareColumn * Board::SQUARE_SIZE;
+	                              ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:169:33: warning: Killed: Replaced + with - [cxx_add_to_sub]
+	auto maxColumn = (squareColumn + 1) * Board::SQUARE_SIZE - 1;
+	                               ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:169:38: warning: Killed: Replaced * with / [cxx_mul_to_div]
+	auto maxColumn = (squareColumn + 1) * Board::SQUARE_SIZE - 1;
+	                                    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:169:59: warning: Killed: Replaced - with + [cxx_sub_to_add]
+	auto maxColumn = (squareColumn + 1) * Board::SQUARE_SIZE - 1;
+	                                                         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:170:26: warning: Killed: Replaced * with / [cxx_mul_to_div]
+	auto minRow = squareRow * Board::SQUARE_SIZE;
+	                        ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:171:27: warning: Killed: Replaced + with - [cxx_add_to_sub]
+	auto maxRow = (squareRow + 1) * Board::SQUARE_SIZE - 1;
+	                         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:171:32: warning: Killed: Replaced * with / [cxx_mul_to_div]
+	auto maxRow = (squareRow + 1) * Board::SQUARE_SIZE - 1;
+	                              ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:171:53: warning: Killed: Replaced - with + [cxx_sub_to_add]
+	auto maxRow = (squareRow + 1) * Board::SQUARE_SIZE - 1;
+	                                                   ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:173:25: warning: Killed: Replaced <= with > [cxx_le_to_gt]
+	for (row r = minRow; r <= maxRow; ++r)
+	                       ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:173:25: warning: Killed: Replaced <= with < [cxx_le_to_lt]
+	for (row r = minRow; r <= maxRow; ++r)
+	                       ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:175:32: warning: Killed: Replaced <= with > [cxx_le_to_gt]
+		for (column c = minColumn; c <= maxColumn; ++c)
+		                             ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:175:32: warning: Killed: Replaced <= with < [cxx_le_to_lt]
+		for (column c = minColumn; c <= maxColumn; ++c)
+		                             ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:177:13: warning: Killed: Replaced translate(c, r, Board::SIZE) with 42 [cxx_replace_scalar_call]
+			auto i = translate(c, r, Board::SIZE);
+			         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:178:10: warning: Killed: Replaced != with == [cxx_ne_to_eq]
+			if (i != index && _tiles[i].value == tile.value)
+			      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:178:38: warning: Killed: Replaced == with != [cxx_eq_to_ne]
+			if (i != index && _tiles[i].value == tile.value)
+			                                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:188:20: warning: Killed: Replaced < with >= [cxx_lt_to_ge]
+	for (row r = 0; r < Board::SIZE; r++)
+	                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:188:20: warning: Killed: Replaced < with <= [cxx_lt_to_le]
+	for (row r = 0; r < Board::SIZE; r++)
+	                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:192:24: warning: Killed: Replaced < with >= [cxx_lt_to_ge]
+		for (column c = 0; c < Board::SIZE; c++)
+		                     ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:192:24: warning: Killed: Replaced < with <= [cxx_lt_to_le]
+		for (column c = 0; c < Board::SIZE; c++)
+		                     ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:215:11: warning: Killed: Replaced * with / [cxx_mul_to_div]
+	return r * width + c;
+	         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:215:19: warning: Killed: Replaced + with - [cxx_add_to_sub]
+	return r * width + c;
+	                 ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:220:15: warning: Killed: Replaced / with * [cxx_div_to_mul]
+	return index / width;
+	             ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:225:15: warning: Killed: Replaced % with / [cxx_rem_to_div]
+	return index % width;
+	             ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:230:21: warning: Killed: Replaced / with * [cxx_div_to_mul]
+	auto squareRow = r / SQUARE_SIZE;
+	                   ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:231:24: warning: Killed: Replaced / with * [cxx_div_to_mul]
+	auto squareColumn = c / SQUARE_SIZE;
+	                      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:233:9: warning: Killed: Replaced translate(squareColumn, squareRow, SQUARE_SIZE) with 42 [cxx_replace_scalar_call]
+	return translate(squareColumn, squareRow, SQUARE_SIZE);
+	       ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:238:13: warning: Killed: Replaced getRow(index, Board::SIZE) with 42 [cxx_replace_scalar_call]
+	auto row = getRow(index, Board::SIZE);
+	           ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:239:16: warning: Killed: Replaced getColumn(index, Board::SIZE) with 42 [cxx_replace_scalar_call]
+	auto column = getColumn(index, Board::SIZE);
+	              ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:241:9: warning: Killed: Replaced getTileSquare(column, row) with 42 [cxx_replace_scalar_call]
+	return getTileSquare(column, row);
+	       ^
+[info] Survived mutants (21/83):
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:15:9: warning: Survived: Replaced clear with  [cxx_remove_void_call]
+	_tiles.clear();
+	       ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:60:38: warning: Survived: Replaced size with 42 [cxx_replace_scalar_call]
+	for (unsigned int i = 0; i < _tiles.size(); i++)
+	                                    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:80:12: warning: Survived: Replaced == with != [cxx_eq_to_ne]
+	if (index == _tiles.size())
+	          ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:80:22: warning: Survived: Replaced size with 42 [cxx_replace_scalar_call]
+	if (index == _tiles.size())
+	                    ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:86:27: warning: Survived: Replaced != with == [cxx_ne_to_eq]
+	if (_tiles[index].status != TileStatus::Solved)
+	                         ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:88:30: warning: Survived: Replaced < with <= [cxx_lt_to_le]
+		for (unsigned int i = 0; i < Board::SIZE; ++i)
+		                           ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:129:23: warning: Survived: Replaced < with >= [cxx_lt_to_ge]
+	for (column c = 0; c < Board::SIZE; ++c)
+	                     ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:148:20: warning: Survived: Replaced < with >= [cxx_lt_to_ge]
+	for (row r = 0; r < Board::SIZE; ++r)
+	                  ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:194:23: warning: Survived: Replaced translate(c, r, Board::SIZE) with 42 [cxx_replace_scalar_call]
+			auto tile = _tiles[translate(c, r, Board::SIZE)];
+			                   ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:195:28: warning: Survived: Replaced == with != [cxx_eq_to_ne]
+			auto value = tile.value == TileValue::Empty ? '-' : static_cast<char>((int)tile.value + 48);
+			                        ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:195:90: warning: Survived: Replaced + with - [cxx_add_to_sub]
+			auto value = tile.value == TileValue::Empty ? '-' : static_cast<char>((int)tile.value + 48);
+			                                                                                      ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:199:11: warning: Survived: Replaced + with - [cxx_add_to_sub]
+			if ((c + 1) % Board::SQUARE_SIZE == 0 && c != Board::SIZE - 1)
+			       ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:199:16: warning: Survived: Replaced % with / [cxx_rem_to_div]
+			if ((c + 1) % Board::SQUARE_SIZE == 0 && c != Board::SIZE - 1)
+			            ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:199:37: warning: Survived: Replaced == with != [cxx_eq_to_ne]
+			if ((c + 1) % Board::SQUARE_SIZE == 0 && c != Board::SIZE - 1)
+			                                 ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:199:47: warning: Survived: Replaced != with == [cxx_ne_to_eq]
+			if ((c + 1) % Board::SQUARE_SIZE == 0 && c != Board::SIZE - 1)
+			                                           ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:199:62: warning: Survived: Replaced - with + [cxx_sub_to_add]
+			if ((c + 1) % Board::SQUARE_SIZE == 0 && c != Board::SIZE - 1)
+			                                                          ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:205:10: warning: Survived: Replaced + with - [cxx_add_to_sub]
+		if ((r + 1) % Board::SQUARE_SIZE == 0 && r != Board::SIZE - 1)
+		       ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:205:15: warning: Survived: Replaced % with / [cxx_rem_to_div]
+		if ((r + 1) % Board::SQUARE_SIZE == 0 && r != Board::SIZE - 1)
+		            ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:205:36: warning: Survived: Replaced == with != [cxx_eq_to_ne]
+		if ((r + 1) % Board::SQUARE_SIZE == 0 && r != Board::SIZE - 1)
+		                                 ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:205:46: warning: Survived: Replaced != with == [cxx_ne_to_eq]
+		if ((r + 1) % Board::SQUARE_SIZE == 0 && r != Board::SIZE - 1)
+		                                           ^
+/home/luna/Desktop/VS/2026_Analysis_SudokuSolver/SudokuSolver/engine/src/Board.cpp:205:61: warning: Survived: Replaced - with + [cxx_sub_to_add]
+		if ((r + 1) % Board::SQUARE_SIZE == 0 && r != Board::SIZE - 1)
+		                                                          ^
+[info] Mutation score: 74%

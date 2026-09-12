@@ -7,3 +7,4 @@ fuzzing/*.o
 *.so
 *.out
 *.log
+*.bc

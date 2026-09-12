@@ -1,0 +1,15 @@
+mutators:
+  - cxx_comparison
+  - cxx_boundary
+  - cxx_arithmetic
+  - cxx_calls
+
+includePaths:
+  - .*SudokuSolver/engine/src/.*
+
+excludePaths:
+  - .*unit_tests/.*
+  - .*_deps/.*
+
+timeout: 30000
+quiet: false

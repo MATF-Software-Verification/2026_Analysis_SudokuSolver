@@ -161,3 +161,50 @@ Vredniji nalazi:
 ```bash
 ./static-analysis/clang-tidy/run_clang_tidy.sh
 ```
+
+## 7. Mull - testiranje mutacijom testova
+
+Korišćen je alat [Mull](https://mull.readthedocs.io/). Ovaj alat ne analizira kod projekta već kvalitet napisanih testova.  
+Za pokrivenost koda dobia sam 100% pokrivenost i za Board.cpp i za SolveResult.cpp. Pokrivenost meri da li je neka linija izvršena tokom testiranja, a ne i da li testovi primećuju da li je ta linija pogrešna ili ne. Mull pravi mutirane kopije programa (sa nekom namernom izmenom, npr. promena znaka aritmetike, ili uslova poređenja) i za svaku kopiju pokreće ceo skup napisanih testova.  
+Mutant je **ubijen** ako testovi padnu (testovi su primetili problem), a ako testovi i dalje prolaze mutant je **preživeo** (nijedan test nije primetio problem).
+
+### Postupak
+1. Board.cpp i SolveResult.cpp se prevode u LLVM bitkod
+2. mull-instrument-22 ubacuje mutante u bitkod
+3. mutirani bitkod se prevodi u objektne fajlove
+4. test fajlovi se prevode standardno tj. testovi se ne mutiraju
+5. sve se linkuje sa GoogleTest bibliotekama
+6. mull-runner-22 izvršava mutante i generiše izveštaje
+
+Korišćene su četiri grupe mutatora:
+* cxx_comparison
+* cxx_boundary
+* cxx_arithmetic 
+* cxx_calls
+
+Poretanje skripteČ `mutation-testing/run_mull.sh`, a konfiguracija se nalazi u `mutation-testing/mull.yml`.
+
+
+### Rezultat
+* Ukupno mutanata: 83
+* Ubijeni: 62
+* Preživeli: 21
+* Mutation score: 74%
+* Svi mutanti su u Board.cpp. 
+* Ceo izveštaj se nalazi u mutation-testing/report/sudoku.txt.
+
+### Analiza preživelih mutanata
+* Board.cpp:80:12: warning: Survived: Replaced == with !=   
+obrće uslov rekurzije i zapravo odmah na pocetku postavlja da je solved=true. Testovi samo proveravaju da li je sudoku rešen (result.solved=true, a tabla je prazna). Testvoi ne gledaju sadržaj rešenja.
+* Board.cpp:80:22: warning: Survived: Replaced size with 42  
+Slično kao prethodno, samo se popuni prvih 42 polja, a ostali ostanu kako su učitani iz fajla
+* Board.cpp:88:30: warning: Survived: Replaced < with <=  
+Originalna petlja ide od 0 do 9 i upisuje vrednost i+1. Zamenom sa <= može se upisati vrednost 10 koja u igri sudoku nije validna. Razlog zašto testovi ne padaju je jer oni samo proveravaju da li je sudoku rešen.
+* Board.cpp:129:23: warning: Survived: Replaced < with >=  
+U funkciji isRowInsertionValid, uslov postaje 0>=9, pa se telo petlje ne izvršava. Nijedan test ne pada, jer sam u duplicate_in_row.txt duplikate stavila u istom kvadratu. Tako da ovu grešku hvata test koji proverava da li se dva broj nalaze u istom kvadratu. Ovaj se ovaj mutant ubio duplikat mora biti u istom redu, ali u različitim kvadratima.
+* Board.cpp:148:20: warning: Survived: Replaced < with >=  
+Isto samo za duplikate u koloni.
+* Preostali mutanti preživlojavaju iz istog razloga - testovi za ispis proveravaju samo postojanje znakova za ispis `| _ -`. Ne proveravaju koliko ih ima, ni gde se nalaze. Zato mutacije koje pomeraju separatore menjaju izgled table, a nijedan test to ne primeti.
+
+### Zaključak
+Visoka pokrivenost koda nije garancija kvaliteta testova. Uprkos potpunoj pokrivenosti linija utvrđenoj u sekciji 1, mutaciono testiranje je pronašlo mesta u kodu koje postojećih 17 testova ne proverava.
