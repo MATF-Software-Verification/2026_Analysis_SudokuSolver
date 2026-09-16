@@ -1,0 +1,1718 @@
+<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg version="1.1" width="1200" height="1350" onload="init(evt)" viewBox="0 0 1200 1350" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<!-- Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples. -->
+<!-- NOTES:  -->
+<defs>
+	<linearGradient id="background" y1="0" y2="1" x1="0" x2="0" >
+		<stop stop-color="#eeeeee" offset="5%" />
+		<stop stop-color="#eeeeb0" offset="95%" />
+	</linearGradient>
+</defs>
+<style type="text/css">
+	text { font-family:Verdana; font-size:12px; fill:rgb(0,0,0); }
+	#search, #ignorecase { opacity:0.1; cursor:pointer; }
+	#search:hover, #search.show, #ignorecase:hover, #ignorecase.show { opacity:1; }
+	#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+	#title { text-anchor:middle; font-size:17px}
+	#unzoom { cursor:pointer; }
+	#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+	.hide { display:none; }
+	.parent { opacity:0.5; }
+</style>
+<script type="text/ecmascript">
+<![CDATA[
+	"use strict";
+	var details, searchbtn, unzoombtn, matchedtxt, svg, searching, currentSearchTerm, ignorecase, ignorecaseBtn;
+	function init(evt) {
+		details = document.getElementById("details").firstChild;
+		searchbtn = document.getElementById("search");
+		ignorecaseBtn = document.getElementById("ignorecase");
+		unzoombtn = document.getElementById("unzoom");
+		matchedtxt = document.getElementById("matched");
+		svg = document.getElementsByTagName("svg")[0];
+		searching = 0;
+		currentSearchTerm = null;
+
+		// use GET parameters to restore a flamegraphs state.
+		var params = get_params();
+		if (params.x && params.y)
+			zoom(find_group(document.querySelector('[x="' + params.x + '"][y="' + params.y + '"]')));
+                if (params.s) search(params.s);
+	}
+
+	// event listeners
+	window.addEventListener("click", function(e) {
+		var target = find_group(e.target);
+		if (target) {
+			if (target.nodeName == "a") {
+				if (e.ctrlKey === false) return;
+				e.preventDefault();
+			}
+			if (target.classList.contains("parent")) unzoom(true);
+			zoom(target);
+			if (!document.querySelector('.parent')) {
+				// we have basically done a clearzoom so clear the url
+				var params = get_params();
+				if (params.x) delete params.x;
+				if (params.y) delete params.y;
+				history.replaceState(null, null, parse_params(params));
+				unzoombtn.classList.add("hide");
+				return;
+			}
+
+			// set parameters for zoom state
+			var el = target.querySelector("rect");
+			if (el && el.attributes && el.attributes.y && el.attributes._orig_x) {
+				var params = get_params()
+				params.x = el.attributes._orig_x.value;
+				params.y = el.attributes.y.value;
+				history.replaceState(null, null, parse_params(params));
+			}
+		}
+		else if (e.target.id == "unzoom") clearzoom();
+		else if (e.target.id == "search") search_prompt();
+		else if (e.target.id == "ignorecase") toggle_ignorecase();
+	}, false)
+
+	// mouse-over for info
+	// show
+	window.addEventListener("mouseover", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = "Function: " + g_to_text(target);
+	}, false)
+
+	// clear
+	window.addEventListener("mouseout", function(e) {
+		var target = find_group(e.target);
+		if (target) details.nodeValue = ' ';
+	}, false)
+
+	// ctrl-F for search
+	// ctrl-I to toggle case-sensitive search
+	window.addEventListener("keydown",function (e) {
+		if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+			e.preventDefault();
+			search_prompt();
+		}
+		else if (e.ctrlKey && e.keyCode === 73) {
+			e.preventDefault();
+			toggle_ignorecase();
+		}
+	}, false)
+
+	// functions
+	function get_params() {
+		var params = {};
+		var paramsarr = window.location.search.substr(1).split('&');
+		for (var i = 0; i < paramsarr.length; ++i) {
+			var tmp = paramsarr[i].split("=");
+			if (!tmp[0] || !tmp[1]) continue;
+			params[tmp[0]]  = decodeURIComponent(tmp[1]);
+		}
+		return params;
+	}
+	function parse_params(params) {
+		var uri = "?";
+		for (var key in params) {
+			uri += key + '=' + encodeURIComponent(params[key]) + '&';
+		}
+		if (uri.slice(-1) == "&")
+			uri = uri.substring(0, uri.length - 1);
+		if (uri == '?')
+			uri = window.location.href.split('?')[0];
+		return uri;
+	}
+	function find_child(node, selector) {
+		var children = node.querySelectorAll(selector);
+		if (children.length) return children[0];
+	}
+	function find_group(node) {
+		var parent = node.parentElement;
+		if (!parent) return;
+		if (parent.id == "frames") return node;
+		return find_group(parent);
+	}
+	function orig_save(e, attr, val) {
+		if (e.attributes["_orig_" + attr] != undefined) return;
+		if (e.attributes[attr] == undefined) return;
+		if (val == undefined) val = e.attributes[attr].value;
+		e.setAttribute("_orig_" + attr, val);
+	}
+	function orig_load(e, attr) {
+		if (e.attributes["_orig_"+attr] == undefined) return;
+		e.attributes[attr].value = e.attributes["_orig_" + attr].value;
+		e.removeAttribute("_orig_"+attr);
+	}
+	function g_to_text(e) {
+		var text = find_child(e, "title").firstChild.nodeValue;
+		return (text)
+	}
+	function g_to_func(e) {
+		var func = g_to_text(e);
+		// if there's any manipulation we want to do to the function
+		// name before it's searched, do it here before returning.
+		return (func);
+	}
+	function update_text(e) {
+		var r = find_child(e, "rect");
+		var t = find_child(e, "text");
+		var w = parseFloat(r.attributes.width.value) -3;
+		var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+		t.attributes.x.value = parseFloat(r.attributes.x.value) + 3;
+
+		// Smaller than this size won't fit anything
+		if (w < 2 * 12 * 0.59) {
+			t.textContent = "";
+			return;
+		}
+
+		t.textContent = txt;
+		var sl = t.getSubStringLength(0, txt.length);
+		// check if only whitespace or if we can fit the entire string into width w
+		if (/^ *$/.test(txt) || sl < w)
+			return;
+
+		// this isn't perfect, but gives a good starting point
+		// and avoids calling getSubStringLength too often
+		var start = Math.floor((w/sl) * txt.length);
+		for (var x = start; x > 0; x = x-2) {
+			if (t.getSubStringLength(0, x + 2) <= w) {
+				t.textContent = txt.substring(0, x) + "..";
+				return;
+			}
+		}
+		t.textContent = "";
+	}
+
+	// zoom
+	function zoom_reset(e) {
+		if (e.attributes != undefined) {
+			orig_load(e, "x");
+			orig_load(e, "width");
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_reset(c[i]);
+		}
+	}
+	function zoom_child(e, x, ratio) {
+		if (e.attributes != undefined) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = (parseFloat(e.attributes.x.value) - x - 10) * ratio + 10;
+				if (e.tagName == "text")
+					e.attributes.x.value = find_child(e.parentNode, "rect[x]").attributes.x.value + 3;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseFloat(e.attributes.width.value) * ratio;
+			}
+		}
+
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_child(c[i], x - 10, ratio);
+		}
+	}
+	function zoom_parent(e) {
+		if (e.attributes) {
+			if (e.attributes.x != undefined) {
+				orig_save(e, "x");
+				e.attributes.x.value = 10;
+			}
+			if (e.attributes.width != undefined) {
+				orig_save(e, "width");
+				e.attributes.width.value = parseInt(svg.width.baseVal.value) - (10 * 2);
+			}
+		}
+		if (e.childNodes == undefined) return;
+		for (var i = 0, c = e.childNodes; i < c.length; i++) {
+			zoom_parent(c[i]);
+		}
+	}
+	function zoom(node) {
+		var attr = find_child(node, "rect").attributes;
+		var width = parseFloat(attr.width.value);
+		var xmin = parseFloat(attr.x.value);
+		var xmax = parseFloat(xmin + width);
+		var ymin = parseFloat(attr.y.value);
+		var ratio = (svg.width.baseVal.value - 2 * 10) / width;
+
+		// XXX: Workaround for JavaScript float issues (fix me)
+		var fudge = 0.0001;
+
+		unzoombtn.classList.remove("hide");
+
+		var el = document.getElementById("frames").children;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var a = find_child(e, "rect").attributes;
+			var ex = parseFloat(a.x.value);
+			var ew = parseFloat(a.width.value);
+			var upstack;
+			// Is it an ancestor
+			if (0 == 0) {
+				upstack = parseFloat(a.y.value) > ymin;
+			} else {
+				upstack = parseFloat(a.y.value) < ymin;
+			}
+			if (upstack) {
+				// Direct ancestor
+				if (ex <= xmin && (ex+ew+fudge) >= xmax) {
+					e.classList.add("parent");
+					zoom_parent(e);
+					update_text(e);
+				}
+				// not in current path
+				else
+					e.classList.add("hide");
+			}
+			// Children maybe
+			else {
+				// no common path
+				if (ex < xmin || ex + fudge >= xmax) {
+					e.classList.add("hide");
+				}
+				else {
+					zoom_child(e, xmin, ratio);
+					update_text(e);
+				}
+			}
+		}
+		search();
+	}
+	function unzoom(dont_update_text) {
+		unzoombtn.classList.add("hide");
+		var el = document.getElementById("frames").children;
+		for(var i = 0; i < el.length; i++) {
+			el[i].classList.remove("parent");
+			el[i].classList.remove("hide");
+			zoom_reset(el[i]);
+			if(!dont_update_text) update_text(el[i]);
+		}
+		search();
+	}
+	function clearzoom() {
+		unzoom();
+
+		// remove zoom state
+		var params = get_params();
+		if (params.x) delete params.x;
+		if (params.y) delete params.y;
+		history.replaceState(null, null, parse_params(params));
+	}
+
+	// search
+	function toggle_ignorecase() {
+		ignorecase = !ignorecase;
+		if (ignorecase) {
+			ignorecaseBtn.classList.add("show");
+		} else {
+			ignorecaseBtn.classList.remove("show");
+		}
+		reset_search();
+		search();
+	}
+	function reset_search() {
+		var el = document.querySelectorAll("#frames rect");
+		for (var i = 0; i < el.length; i++) {
+			orig_load(el[i], "fill")
+		}
+		var params = get_params();
+		delete params.s;
+		history.replaceState(null, null, parse_params(params));
+	}
+	function search_prompt() {
+		if (!searching) {
+			var term = prompt("Enter a search term (regexp " +
+			    "allowed, eg: ^ext4_)"
+			    + (ignorecase ? ", ignoring case" : "")
+			    + "\nPress Ctrl-i to toggle case sensitivity", "");
+			if (term != null) search(term);
+		} else {
+			reset_search();
+			searching = 0;
+			currentSearchTerm = null;
+			searchbtn.classList.remove("show");
+			searchbtn.firstChild.nodeValue = "Search"
+			matchedtxt.classList.add("hide");
+			matchedtxt.firstChild.nodeValue = ""
+		}
+	}
+	function search(term) {
+		if (term) currentSearchTerm = term;
+		if (currentSearchTerm === null) return;
+
+		var re = new RegExp(currentSearchTerm, ignorecase ? 'i' : '');
+		var el = document.getElementById("frames").children;
+		var matches = new Object();
+		var maxwidth = 0;
+		for (var i = 0; i < el.length; i++) {
+			var e = el[i];
+			var func = g_to_func(e);
+			var rect = find_child(e, "rect");
+			if (func == null || rect == null)
+				continue;
+
+			// Save max width. Only works as we have a root frame
+			var w = parseFloat(rect.attributes.width.value);
+			if (w > maxwidth)
+				maxwidth = w;
+
+			if (func.match(re)) {
+				// highlight
+				var x = parseFloat(rect.attributes.x.value);
+				orig_save(rect, "fill");
+				rect.attributes.fill.value = "rgb(230,0,230)";
+
+				// remember matches
+				if (matches[x] == undefined) {
+					matches[x] = w;
+				} else {
+					if (w > matches[x]) {
+						// overwrite with parent
+						matches[x] = w;
+					}
+				}
+				searching = 1;
+			}
+		}
+		if (!searching)
+			return;
+		var params = get_params();
+		params.s = currentSearchTerm;
+		history.replaceState(null, null, parse_params(params));
+
+		searchbtn.classList.add("show");
+		searchbtn.firstChild.nodeValue = "Reset Search";
+
+		// calculate percent matched, excluding vertical overlap
+		var count = 0;
+		var lastx = -1;
+		var lastw = 0;
+		var keys = Array();
+		for (k in matches) {
+			if (matches.hasOwnProperty(k))
+				keys.push(k);
+		}
+		// sort the matched frames by their x location
+		// ascending, then width descending
+		keys.sort(function(a, b){
+			return a - b;
+		});
+		// Step through frames saving only the biggest bottom-up frames
+		// thanks to the sort order. This relies on the tree property
+		// where children are always smaller than their parents.
+		var fudge = 0.0001;	// JavaScript floating point
+		for (var k in keys) {
+			var x = parseFloat(keys[k]);
+			var w = matches[keys[k]];
+			if (x >= lastx + lastw - fudge) {
+				count += w;
+				lastx = x;
+				lastw = w;
+			}
+		}
+		// display matched percent
+		matchedtxt.classList.remove("hide");
+		var pct = 100 * count / maxwidth;
+		if (pct != 100) pct = pct.toFixed(1)
+		matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+	}
+]]>
+</script>
+<rect x="0.0" y="0" width="1200.0" height="1350.0" fill="url(#background)"  />
+<text id="title" x="600.00" y="24" >Flame Graph</text>
+<text id="details" x="10.00" y="1333" > </text>
+<text id="unzoom" x="10.00" y="24" class="hide">Reset Zoom</text>
+<text id="search" x="1090.00" y="24" >Search</text>
+<text id="ignorecase" x="1174.00" y="24" >ic</text>
+<text id="matched" x="1090.00" y="1333" > </text>
+<g id="frames">
+<g >
+<title>Board::backtrack (4,195,436,809 samples, 12.06%)</title><rect x="654.7" y="437" width="142.3" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="657.69" y="447.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (33,262,296,547 samples, 95.62%)</title><rect x="42.9" y="709" width="1128.3" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="45.86" y="719.5" >Board::backtrack</text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (10,970,689 samples, 0.03%)</title><rect x="1010.7" y="501" width="0.4" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1013.68" y="511.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (5,079,178 samples, 0.01%)</title><rect x="1062.6" y="501" width="0.2" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="1065.63" y="511.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (530,234,281 samples, 1.52%)</title><rect x="797.3" y="453" width="17.9" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="800.26" y="463.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (3,369,676 samples, 0.01%)</title><rect x="1170.9" y="645" width="0.2" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1173.94" y="655.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (28,762,131 samples, 0.08%)</title><rect x="1181.5" y="741" width="1.0" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1184.49" y="751.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (1,794,038,462 samples, 5.16%)</title><rect x="949.7" y="501" width="60.9" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="952.71" y="511.5" >Board:..</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (51,655,616 samples, 0.15%)</title><rect x="759.8" y="341" width="1.7" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="762.78" y="351.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (10,117,146 samples, 0.03%)</title><rect x="1010.7" y="469" width="0.4" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="1013.71" y="479.5" ></text>
+</g>
+<g >
+<title>sched_tick (7,473,075 samples, 0.02%)</title><rect x="1087.7" y="437" width="0.2" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="1090.67" y="447.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (20,939,752 samples, 0.06%)</title><rect x="1187.9" y="965" width="0.7" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1190.90" y="975.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (89,548,319 samples, 0.26%)</title><rect x="756.6" y="325" width="3.0" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="759.60" y="335.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (24,319,739,418 samples, 69.91%)</title><rect x="238.6" y="549" width="824.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="241.56" y="559.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (38,120,320 samples, 0.11%)</title><rect x="753.2" y="277" width="1.3" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="756.22" y="287.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,562,201,251 samples, 99.36%)</title><rect x="14.5" y="965" width="1172.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="17.46" y="975.5" >Board::backtrack</text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (3,239,650 samples, 0.01%)</title><rect x="948.8" y="485" width="0.1" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="951.76" y="495.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (380,614,929 samples, 1.09%)</title><rect x="1088.4" y="581" width="12.9" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1091.36" y="591.5" ></text>
+</g>
+<g >
+<title>update_process_times (3,259,863 samples, 0.01%)</title><rect x="1160.9" y="549" width="0.1" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="1163.90" y="559.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,407,911,895 samples, 98.91%)</title><rect x="17.9" y="805" width="1167.1" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="20.88" y="815.5" >Board::backtrack</text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (3,239,650 samples, 0.01%)</title><rect x="948.8" y="469" width="0.1" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="951.76" y="479.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (272,799,874 samples, 0.78%)</title><rect x="1101.6" y="597" width="9.3" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1104.61" y="607.5" ></text>
+</g>
+<g >
+<title>all (34,786,207,350 samples, 100%)</title><rect x="10.0" y="1301" width="1180.0" height="15.0" fill="rgb(213,39,9)" rx="2" ry="2" />
+<text  x="13.00" y="1311.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (4,116,489 samples, 0.01%)</title><rect x="1160.9" y="613" width="0.1" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="1163.90" y="623.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (6,714,702 samples, 0.02%)</title><rect x="1010.3" y="453" width="0.3" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="1013.34" y="463.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (4,116,489 samples, 0.01%)</title><rect x="1160.9" y="597" width="0.1" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="1163.90" y="607.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (12,682,620 samples, 0.04%)</title><rect x="1186.4" y="917" width="0.5" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1189.43" y="927.5" ></text>
+</g>
+<g >
+<title>update_process_times (8,351,030 samples, 0.02%)</title><rect x="884.4" y="341" width="0.3" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="887.42" y="351.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (12,521,839 samples, 0.04%)</title><rect x="884.4" y="421" width="0.4" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="887.37" y="431.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (3,369,676 samples, 0.01%)</title><rect x="1170.9" y="629" width="0.2" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1173.94" y="639.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (3,147,709,721 samples, 9.05%)</title><rect x="677.5" y="421" width="106.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="680.53" y="431.5" >Board::backtr..</text>
+</g>
+<g >
+<title>__hrtimer_run_queues (8,294,614 samples, 0.02%)</title><rect x="1087.7" y="485" width="0.3" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="1090.67" y="495.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,535,814,834 samples, 99.28%)</title><rect x="14.9" y="901" width="1171.5" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="17.93" y="911.5" >Board::backtrack</text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (12,673,100 samples, 0.04%)</title><rect x="1010.6" y="517" width="0.5" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1013.62" y="527.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (707,943,949 samples, 2.04%)</title><rect x="1063.5" y="549" width="24.0" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1066.52" y="559.5" >B..</text>
+</g>
+<g >
+<title>Board::translate (5,979,143 samples, 0.02%)</title><rect x="1131.4" y="581" width="0.2" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="1134.42" y="591.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (29,092,356,203 samples, 83.63%)</title><rect x="124.1" y="613" width="986.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="127.10" y="623.5" >Board::backtrack</text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (6,608,126 samples, 0.02%)</title><rect x="1101.3" y="565" width="0.2" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1104.27" y="575.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (9,144,516 samples, 0.03%)</title><rect x="884.8" y="437" width="0.4" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="887.85" y="447.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (11,528,101 samples, 0.03%)</title><rect x="1087.6" y="549" width="0.4" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1090.62" y="559.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (63,456,122 samples, 0.18%)</title><rect x="741.2" y="197" width="2.2" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.20" y="207.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::size (5,137,334 samples, 0.01%)</title><rect x="797.1" y="437" width="0.2" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="800.09" y="447.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (3,150,082 samples, 0.01%)</title><rect x="775.1" y="373" width="0.1" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="778.09" y="383.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (255,258,886 samples, 0.73%)</title><rect x="738.2" y="261" width="8.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="741.24" y="271.5" ></text>
+</g>
+<g >
+<title>tick_nohz_handler (7,725,829 samples, 0.02%)</title><rect x="947.4" y="373" width="0.3" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="950.41" y="383.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (4,222,112 samples, 0.01%)</title><rect x="784.0" y="357" width="0.2" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="787.05" y="367.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (290,652,014 samples, 0.84%)</title><rect x="1161.2" y="661" width="9.9" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1164.19" y="671.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,441,297,549 samples, 99.01%)</title><rect x="17.1" y="821" width="1168.3" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="20.12" y="831.5" >Board::backtrack</text>
+</g>
+<g >
+<title>hrtimer_interrupt (10,020,547 samples, 0.03%)</title><rect x="884.4" y="389" width="0.3" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="887.40" y="399.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (3,239,650 samples, 0.01%)</title><rect x="948.8" y="501" width="0.1" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="951.76" y="511.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (18,704,626 samples, 0.05%)</title><rect x="1188.6" y="997" width="0.6" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1191.61" y="1007.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (7,558,738 samples, 0.02%)</title><rect x="1189.2" y="997" width="0.3" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1192.24" y="1007.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (11,092,032 samples, 0.03%)</title><rect x="1062.4" y="533" width="0.4" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1065.42" y="543.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (18,704,626 samples, 0.05%)</title><rect x="1188.6" y="981" width="0.6" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1191.61" y="991.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (9,218,284 samples, 0.03%)</title><rect x="948.0" y="437" width="0.3" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="950.96" y="447.5" ></text>
+</g>
+<g >
+<title>Board::translate (4,258,102 samples, 0.01%)</title><rect x="1170.8" y="645" width="0.1" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="1173.79" y="655.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (5,800,125 samples, 0.02%)</title><rect x="1101.3" y="517" width="0.2" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="1104.30" y="527.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (5,264,828 samples, 0.02%)</title><rect x="1189.6" y="1029" width="0.2" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1192.61" y="1039.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (93,978,935 samples, 0.27%)</title><rect x="750.0" y="261" width="3.2" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="752.97" y="271.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (47,327,860 samples, 0.14%)</title><rect x="741.7" y="101" width="1.6" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.66" y="111.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::size (17,268,647 samples, 0.05%)</title><rect x="885.5" y="469" width="0.6" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="888.47" y="479.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,754,119,214 samples, 99.91%)</title><rect x="10.7" y="1045" width="1178.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.70" y="1055.5" >Board::backtrack</text>
+</g>
+<g >
+<title>__hrtimer_run_queues (8,560,519 samples, 0.02%)</title><rect x="947.4" y="389" width="0.3" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="950.41" y="399.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (6,714,702 samples, 0.02%)</title><rect x="1010.3" y="437" width="0.3" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="1013.34" y="447.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (95,267,743 samples, 0.27%)</title><rect x="743.6" y="229" width="3.3" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="746.64" y="239.5" ></text>
+</g>
+<g >
+<title>tick_nohz_handler (8,294,614 samples, 0.02%)</title><rect x="1087.7" y="469" width="0.3" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="1090.67" y="479.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (53,594,309 samples, 0.15%)</title><rect x="761.6" y="373" width="1.8" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="764.59" y="383.5" ></text>
+</g>
+<g >
+<title>[libc.so.6] (34,782,700,218 samples, 99.99%)</title><rect x="10.1" y="1237" width="1179.9" height="15.0" fill="rgb(223,84,20)" rx="2" ry="2" />
+<text  x="13.12" y="1247.5" >[libc.so.6]</text>
+</g>
+<g >
+<title>Board::backtrack (34,559,697,730 samples, 99.35%)</title><rect x="14.5" y="949" width="1172.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="17.55" y="959.5" >Board::backtrack</text>
+</g>
+<g >
+<title>handle_softirqs (3,432,614 samples, 0.01%)</title><rect x="1062.5" y="485" width="0.1" height="15.0" fill="rgb(238,156,37)" rx="2" ry="2" />
+<text  x="1065.51" y="495.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (13,550,218 samples, 0.04%)</title><rect x="947.8" y="485" width="0.5" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="950.81" y="495.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (1,398,867,257 samples, 4.02%)</title><rect x="716.0" y="389" width="47.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="718.95" y="399.5" >Boar..</text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (9,838,240 samples, 0.03%)</title><rect x="742.9" y="69" width="0.3" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="745.88" y="79.5" ></text>
+</g>
+<g >
+<title>update_process_times (7,725,829 samples, 0.02%)</title><rect x="947.4" y="357" width="0.3" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="950.41" y="367.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (3,299,746 samples, 0.01%)</title><rect x="815.2" y="437" width="0.2" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="818.25" y="447.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::size (15,360,011 samples, 0.04%)</title><rect x="949.2" y="501" width="0.5" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="952.19" y="511.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (39,067,762 samples, 0.11%)</title><rect x="741.9" y="85" width="1.3" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.88" y="95.5" ></text>
+</g>
+<g >
+<title>sched_tick (7,725,829 samples, 0.02%)</title><rect x="947.4" y="341" width="0.3" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="950.41" y="351.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,472,709,821 samples, 99.10%)</title><rect x="16.4" y="853" width="1169.3" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="19.37" y="863.5" >Board::backtrack</text>
+</g>
+<g >
+<title>tick_nohz_handler (9,161,669 samples, 0.03%)</title><rect x="884.4" y="357" width="0.3" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="887.40" y="367.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (530,234,281 samples, 1.52%)</title><rect x="797.3" y="437" width="17.9" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="800.26" y="447.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (4,116,489 samples, 0.01%)</title><rect x="1160.9" y="629" width="0.1" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1163.90" y="639.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (5,128,175 samples, 0.01%)</title><rect x="796.8" y="389" width="0.2" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="799.78" y="399.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (20,939,752 samples, 0.06%)</title><rect x="1187.9" y="981" width="0.7" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1190.90" y="991.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (28,762,131 samples, 0.08%)</title><rect x="1181.5" y="725" width="1.0" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1184.49" y="735.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (63,456,122 samples, 0.18%)</title><rect x="741.2" y="181" width="2.2" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.20" y="191.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (5,886,363 samples, 0.02%)</title><rect x="1148.4" y="629" width="0.2" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1151.40" y="639.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (9,838,240 samples, 0.03%)</title><rect x="742.9" y="53" width="0.3" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="745.88" y="63.5" ></text>
+</g>
+<g >
+<title>Board::translate (4,078,417 samples, 0.01%)</title><rect x="1148.2" y="597" width="0.1" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="1151.15" y="607.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (645,660,600 samples, 1.86%)</title><rect x="731.3" y="293" width="21.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="734.31" y="303.5" >B..</text>
+</g>
+<g >
+<title>Board::translate (21,382,338 samples, 0.06%)</title><rect x="883.6" y="437" width="0.7" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="886.56" y="447.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,770,527,189 samples, 99.95%)</title><rect x="10.4" y="1077" width="1179.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.38" y="1087.5" >Board::backtrack</text>
+</g>
+<g >
+<title>update_process_times (4,253,247 samples, 0.01%)</title><rect x="1062.6" y="437" width="0.2" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="1065.63" y="447.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (9,128,451 samples, 0.03%)</title><rect x="1087.7" y="517" width="0.3" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="1090.67" y="527.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,761,968,100 samples, 99.93%)</title><rect x="10.6" y="1061" width="1179.2" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.61" y="1071.5" >Board::backtrack</text>
+</g>
+<g >
+<title>hrtimer_interrupt (9,393,230 samples, 0.03%)</title><rect x="947.4" y="405" width="0.3" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="950.41" y="415.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (7,558,738 samples, 0.02%)</title><rect x="1189.2" y="1013" width="0.3" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1192.24" y="1023.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (10,937,954 samples, 0.03%)</title><rect x="1185.0" y="789" width="0.4" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1188.05" y="799.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (62,573,329 samples, 0.18%)</title><rect x="741.2" y="165" width="2.2" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.23" y="175.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::size (6,825,291 samples, 0.02%)</title><rect x="815.4" y="453" width="0.3" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="818.42" y="463.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (89,860,391 samples, 0.26%)</title><rect x="746.9" y="245" width="3.0" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="749.90" y="255.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::size (14,722,096 samples, 0.04%)</title><rect x="1011.5" y="517" width="0.5" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="1014.46" y="527.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,776,364,240 samples, 99.97%)</title><rect x="10.2" y="1093" width="1179.6" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.18" y="1103.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (12,682,620 samples, 0.04%)</title><rect x="1186.4" y="933" width="0.5" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1189.43" y="943.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (5,793,034 samples, 0.02%)</title><rect x="1178.0" y="693" width="0.2" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1180.96" y="703.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (611,022,842 samples, 1.76%)</title><rect x="1111.0" y="613" width="20.7" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1113.96" y="623.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (3,299,746 samples, 0.01%)</title><rect x="815.2" y="389" width="0.2" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="818.25" y="399.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (10,125,884 samples, 0.03%)</title><rect x="1184.7" y="789" width="0.3" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1187.68" y="799.5" ></text>
+</g>
+<g >
+<title>sched_tick (3,259,863 samples, 0.01%)</title><rect x="1160.9" y="533" width="0.1" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="1163.90" y="543.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (35,703,966 samples, 0.10%)</title><rect x="1182.5" y="741" width="1.2" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1185.49" y="751.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,371,587,697 samples, 98.81%)</title><rect x="18.7" y="789" width="1166.0" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="21.74" y="799.5" >Board::backtrack</text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (10,807,079 samples, 0.03%)</title><rect x="884.8" y="469" width="0.4" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="887.79" y="479.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (38,120,320 samples, 0.11%)</title><rect x="753.2" y="293" width="1.3" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="756.22" y="303.5" ></text>
+</g>
+<g >
+<title>tick_nohz_handler (5,062,120 samples, 0.01%)</title><rect x="1010.3" y="405" width="0.2" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="1013.34" y="415.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (4,188,036 samples, 0.01%)</title><rect x="1148.5" y="581" width="0.1" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="1151.46" y="591.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (85,431,405 samples, 0.25%)</title><rect x="740.7" y="245" width="2.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="743.74" y="255.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (5,800,125 samples, 0.02%)</title><rect x="1101.3" y="533" width="0.2" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="1104.30" y="543.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (57,391,044 samples, 0.16%)</title><rect x="741.4" y="149" width="1.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.38" y="159.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (6,714,702 samples, 0.02%)</title><rect x="1010.3" y="469" width="0.3" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1013.34" y="479.5" ></text>
+</g>
+<g >
+<title>task_tick_fair (3,308,391 samples, 0.01%)</title><rect x="884.6" y="309" width="0.1" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="887.57" y="319.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (4,063,463 samples, 0.01%)</title><rect x="743.4" y="213" width="0.1" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="746.35" y="223.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (4,063,463 samples, 0.01%)</title><rect x="743.4" y="197" width="0.1" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="746.35" y="207.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (3,150,082 samples, 0.01%)</title><rect x="775.1" y="389" width="0.1" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="778.09" y="399.5" ></text>
+</g>
+<g >
+<title>tick_nohz_handler (7,612,648 samples, 0.02%)</title><rect x="1010.8" y="437" width="0.2" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="1013.77" y="447.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (290,652,014 samples, 0.84%)</title><rect x="1161.2" y="677" width="9.9" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1164.19" y="687.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (9,128,451 samples, 0.03%)</title><rect x="1087.7" y="501" width="0.3" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="1090.67" y="511.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (10,856,135 samples, 0.03%)</title><rect x="884.4" y="405" width="0.4" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="887.40" y="415.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (272,799,874 samples, 0.78%)</title><rect x="1101.6" y="581" width="9.3" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1104.61" y="591.5" ></text>
+</g>
+<g >
+<title>SudokuSolver (34,786,207,350 samples, 100.00%)</title><rect x="10.0" y="1285" width="1180.0" height="15.0" fill="rgb(209,20,4)" rx="2" ry="2" />
+<text  x="13.00" y="1295.5" >SudokuSolver</text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (8,568,741 samples, 0.02%)</title><rect x="1185.4" y="837" width="0.3" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1188.42" y="847.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (3,239,650 samples, 0.01%)</title><rect x="948.8" y="437" width="0.1" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="951.76" y="447.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (19,868,890,470 samples, 57.12%)</title><rect x="338.0" y="533" width="674.0" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="340.98" y="543.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (59,020,990 samples, 0.17%)</title><rect x="754.6" y="309" width="2.0" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="757.57" y="319.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (5,264,828 samples, 0.02%)</title><rect x="1189.6" y="1045" width="0.2" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1192.61" y="1055.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (93,885,340 samples, 0.27%)</title><rect x="1178.3" y="709" width="3.2" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1181.27" y="719.5" ></text>
+</g>
+<g >
+<title>Board::translate (24,799,243 samples, 0.07%)</title><rect x="1009.5" y="485" width="0.8" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="1012.47" y="495.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (9,927,175,343 samples, 28.54%)</title><rect x="549.3" y="485" width="336.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="552.31" y="495.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (95,267,743 samples, 0.27%)</title><rect x="743.6" y="245" width="3.3" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="746.64" y="255.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (26,940,323,232 samples, 77.45%)</title><rect x="174.5" y="581" width="913.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="177.51" y="591.5" >Board::backtrack</text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (10,967,716 samples, 0.03%)</title><rect x="947.9" y="469" width="0.4" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="950.90" y="479.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (1,486,766,614 samples, 4.27%)</title><rect x="1012.0" y="533" width="50.4" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1014.96" y="543.5" >Board..</text>
+</g>
+<g >
+<title>[ld-linux-x86-64.so.2] (3,138,833 samples, 0.01%)</title><rect x="10.0" y="1253" width="0.1" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="13.00" y="1263.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (1,819,109,325 samples, 5.23%)</title><rect x="886.1" y="469" width="61.7" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="889.05" y="479.5" >Board:..</text>
+</g>
+<g >
+<title>Board::translate (9,196,719 samples, 0.03%)</title><rect x="814.9" y="421" width="0.3" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="817.86" y="431.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (6,666,806 samples, 0.02%)</title><rect x="948.0" y="421" width="0.2" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="950.99" y="431.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (3,299,746 samples, 0.01%)</title><rect x="815.2" y="405" width="0.2" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="818.25" y="415.5" ></text>
+</g>
+<g >
+<title>update_process_times (4,268,297 samples, 0.01%)</title><rect x="796.8" y="325" width="0.1" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="799.78" y="335.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (3,299,746 samples, 0.01%)</title><rect x="815.2" y="421" width="0.2" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="818.25" y="431.5" ></text>
+</g>
+<g >
+<title>tick_nohz_handler (3,284,664 samples, 0.01%)</title><rect x="1148.5" y="549" width="0.1" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="1151.46" y="559.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (5,128,175 samples, 0.01%)</title><rect x="796.8" y="357" width="0.2" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="799.78" y="367.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (2,038,266,153 samples, 5.86%)</title><rect x="815.7" y="469" width="69.1" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="818.65" y="479.5" >Board::..</text>
+</g>
+<g >
+<title>update_process_times (4,268,559 samples, 0.01%)</title><rect x="1010.4" y="389" width="0.1" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="1013.37" y="399.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (53,594,309 samples, 0.15%)</title><rect x="761.6" y="357" width="1.8" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="764.59" y="367.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (5,000,750 samples, 0.01%)</title><rect x="1160.9" y="645" width="0.1" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1163.87" y="655.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (5,800,125 samples, 0.02%)</title><rect x="1101.3" y="549" width="0.2" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="1104.30" y="559.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (5,793,034 samples, 0.02%)</title><rect x="1178.0" y="709" width="0.2" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1180.96" y="719.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (32,538,060,287 samples, 93.54%)</title><rect x="57.5" y="677" width="1103.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="60.45" y="687.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (33,230,406,353 samples, 95.53%)</title><rect x="43.9" y="693" width="1127.2" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="46.86" y="703.5" >Board::backtrack</text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (10,952,393 samples, 0.03%)</title><rect x="947.4" y="453" width="0.3" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="950.36" y="463.5" ></text>
+</g>
+<g >
+<title>Board::translate (24,823,388 samples, 0.07%)</title><rect x="946.5" y="453" width="0.8" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="949.49" y="463.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (486,819,601 samples, 1.40%)</title><rect x="1131.9" y="629" width="16.5" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1134.89" y="639.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (30,456,514 samples, 0.09%)</title><rect x="1186.9" y="949" width="1.0" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1189.86" y="959.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (5,062,120 samples, 0.01%)</title><rect x="1010.3" y="421" width="0.2" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="1013.34" y="431.5" ></text>
+</g>
+<g >
+<title>sched_tick (6,624,649 samples, 0.02%)</title><rect x="884.9" y="357" width="0.2" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="887.88" y="367.5" ></text>
+</g>
+<g >
+<title>tick_nohz_handler (4,947,844 samples, 0.01%)</title><rect x="948.0" y="405" width="0.2" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="951.04" y="415.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (8,333,852 samples, 0.02%)</title><rect x="884.9" y="405" width="0.3" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="887.88" y="415.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (611,022,842 samples, 1.76%)</title><rect x="1111.0" y="597" width="20.7" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1113.96" y="607.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (259,833,176 samples, 0.75%)</title><rect x="775.2" y="389" width="8.8" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="778.23" y="399.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (8,333,852 samples, 0.02%)</title><rect x="884.9" y="421" width="0.3" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="887.88" y="431.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (360,102,441 samples, 1.04%)</title><rect x="1148.7" y="645" width="12.2" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1151.66" y="655.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (10,000,713 samples, 0.03%)</title><rect x="884.8" y="453" width="0.4" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="887.82" y="463.5" ></text>
+</g>
+<g >
+<title>task_tick_fair (5,914,951 samples, 0.02%)</title><rect x="947.4" y="325" width="0.2" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="950.45" y="335.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::operator[] (9,631,187 samples, 0.03%)</title><rect x="1011.1" y="517" width="0.4" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="1014.14" y="527.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,723,891,240 samples, 99.82%)</title><rect x="11.4" y="1013" width="1177.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="14.35" y="1023.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (30,360,776,584 samples, 87.28%)</title><rect x="102.0" y="629" width="1029.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="105.01" y="639.5" >Board::backtrack</text>
+</g>
+<g >
+<title>main (34,781,741,512 samples, 99.99%)</title><rect x="10.2" y="1221" width="1179.8" height="15.0" fill="rgb(243,179,42)" rx="2" ry="2" />
+<text  x="13.15" y="1231.5" >main</text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (343,812,347 samples, 0.99%)</title><rect x="763.4" y="389" width="11.7" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="766.40" y="399.5" ></text>
+</g>
+<g >
+<title>task_tick_fair (3,356,150 samples, 0.01%)</title><rect x="796.8" y="293" width="0.1" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="799.81" y="303.5" ></text>
+</g>
+<g >
+<title>sched_tick (3,362,730 samples, 0.01%)</title><rect x="1062.7" y="421" width="0.1" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="1065.66" y="431.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (10,952,393 samples, 0.03%)</title><rect x="947.4" y="437" width="0.3" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="950.36" y="447.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (4,222,112 samples, 0.01%)</title><rect x="784.0" y="389" width="0.2" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="787.05" y="399.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (12,521,839 samples, 0.04%)</title><rect x="884.4" y="437" width="0.4" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="887.37" y="447.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::operator[] (11,794,508 samples, 0.03%)</title><rect x="1062.8" y="533" width="0.4" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="1065.80" y="543.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,300,205,295 samples, 98.60%)</title><rect x="20.2" y="773" width="1163.5" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="23.22" y="783.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (93,885,340 samples, 0.27%)</title><rect x="1178.3" y="725" width="3.2" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1181.27" y="735.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (1,819,109,325 samples, 5.23%)</title><rect x="886.1" y="485" width="61.7" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="889.05" y="495.5" >Board:..</text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::operator[] (6,813,737 samples, 0.02%)</title><rect x="948.4" y="485" width="0.2" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="951.38" y="495.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (3,299,746 samples, 0.01%)</title><rect x="815.2" y="453" width="0.2" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="818.25" y="463.5" ></text>
+</g>
+<g >
+<title>update_process_times (7,473,075 samples, 0.02%)</title><rect x="1087.7" y="453" width="0.2" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="1090.67" y="463.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,780,549,791 samples, 99.98%)</title><rect x="10.2" y="1189" width="1179.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.15" y="1199.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (34,473,458,085 samples, 99.10%)</title><rect x="16.3" y="869" width="1169.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="19.35" y="879.5" >Board::backtrack</text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (6,881,778 samples, 0.02%)</title><rect x="796.7" y="421" width="0.3" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="799.72" y="431.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (7,549,793 samples, 0.02%)</title><rect x="1010.3" y="485" width="0.3" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1013.31" y="495.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (4,253,247 samples, 0.01%)</title><rect x="1062.6" y="485" width="0.2" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="1065.63" y="495.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (8,511,792 samples, 0.02%)</title><rect x="1062.5" y="517" width="0.3" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1065.51" y="527.5" ></text>
+</g>
+<g >
+<title>Board::translate (17,176,098 samples, 0.05%)</title><rect x="1061.6" y="501" width="0.6" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="1064.62" y="511.5" ></text>
+</g>
+<g >
+<title>Board::translate (4,291,111 samples, 0.01%)</title><rect x="1101.1" y="549" width="0.1" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="1104.07" y="559.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (911,255,541 samples, 2.62%)</title><rect x="725.7" y="341" width="30.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="728.69" y="351.5" >Bo..</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (380,614,929 samples, 1.09%)</title><rect x="1088.4" y="565" width="12.9" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1091.36" y="575.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (35,703,966 samples, 0.10%)</title><rect x="1182.5" y="757" width="1.2" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1185.49" y="767.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,443,745,834 samples, 99.02%)</title><rect x="17.0" y="837" width="1168.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="20.04" y="847.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (34,779,711,420 samples, 99.98%)</title><rect x="10.2" y="1109" width="1179.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.15" y="1119.5" >Board::backtrack</text>
+</g>
+<g >
+<title>sched_tick (5,900,477 samples, 0.02%)</title><rect x="1010.8" y="405" width="0.2" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="1013.83" y="415.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (3,302,403 samples, 0.01%)</title><rect x="1189.5" y="1029" width="0.1" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1192.50" y="1039.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (10,697,364 samples, 0.03%)</title><rect x="1087.6" y="533" width="0.4" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1090.65" y="543.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (20,233,336 samples, 0.06%)</title><rect x="742.2" y="69" width="0.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="745.19" y="79.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (14,645,872,813 samples, 42.10%)</title><rect x="451.9" y="501" width="496.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="454.95" y="511.5" >Board::backtrack</text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (5,019,624 samples, 0.01%)</title><rect x="1148.4" y="613" width="0.2" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1151.43" y="623.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,746,643,339 samples, 99.89%)</title><rect x="10.8" y="1029" width="1178.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.84" y="1039.5" >Board::backtrack</text>
+</g>
+<g >
+<title>tick_nohz_handler (3,259,863 samples, 0.01%)</title><rect x="1160.9" y="565" width="0.1" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="1163.90" y="575.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (200,195,925 samples, 0.58%)</title><rect x="1171.2" y="709" width="6.8" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1174.17" y="719.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (10,125,884 samples, 0.03%)</title><rect x="1184.7" y="773" width="0.3" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1187.68" y="783.5" ></text>
+</g>
+<g >
+<title>Board::translate (7,581,018 samples, 0.02%)</title><rect x="1087.2" y="517" width="0.2" height="15.0" fill="rgb(219,68,16)" rx="2" ry="2" />
+<text  x="1090.19" y="527.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (6,608,126 samples, 0.02%)</title><rect x="1101.3" y="581" width="0.2" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1104.27" y="591.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::operator[] (7,727,974 samples, 0.02%)</title><rect x="948.9" y="501" width="0.3" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="951.93" y="511.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (10,117,146 samples, 0.03%)</title><rect x="1010.7" y="485" width="0.4" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="1013.71" y="495.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (343,812,347 samples, 0.99%)</title><rect x="763.4" y="373" width="11.7" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="766.40" y="383.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (3,302,403 samples, 0.01%)</title><rect x="1189.5" y="1013" width="0.1" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1192.50" y="1023.5" ></text>
+</g>
+<g >
+<title>_start (34,782,700,218 samples, 99.99%)</title><rect x="10.1" y="1269" width="1179.9" height="15.0" fill="rgb(245,185,44)" rx="2" ry="2" />
+<text  x="13.12" y="1279.5" >_start</text>
+</g>
+<g >
+<title>Board::backtrack (440,636,481 samples, 1.27%)</title><rect x="735.0" y="277" width="15.0" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="738.03" y="287.5" ></text>
+</g>
+<g >
+<title>update_process_times (6,624,649 samples, 0.02%)</title><rect x="884.9" y="373" width="0.2" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="887.88" y="383.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (89,860,391 samples, 0.26%)</title><rect x="746.9" y="261" width="3.0" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="749.90" y="271.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (11,975,574 samples, 0.03%)</title><rect x="1185.7" y="869" width="0.4" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1188.74" y="879.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (32,511,468,808 samples, 93.46%)</title><rect x="58.3" y="661" width="1102.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="61.30" y="671.5" >Board::backtrack</text>
+</g>
+<g >
+<title>[ld-linux-x86-64.so.2] (3,138,833 samples, 0.01%)</title><rect x="10.0" y="1221" width="0.1" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="13.00" y="1231.5" ></text>
+</g>
+<g >
+<title>task_tick_fair (5,900,477 samples, 0.02%)</title><rect x="1010.8" y="389" width="0.2" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="1013.83" y="399.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (259,833,176 samples, 0.75%)</title><rect x="775.2" y="405" width="8.8" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="778.23" y="415.5" ></text>
+</g>
+<g >
+<title>__irq_exit_rcu (3,432,614 samples, 0.01%)</title><rect x="1062.5" y="501" width="0.1" height="15.0" fill="rgb(227,101,24)" rx="2" ry="2" />
+<text  x="1065.51" y="511.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (4,349,816 samples, 0.01%)</title><rect x="743.5" y="213" width="0.1" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="746.49" y="223.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (31,613,741,291 samples, 90.88%)</title><rect x="76.3" y="645" width="1072.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="79.27" y="655.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (14,931,258,775 samples, 42.92%)</title><rect x="443.2" y="517" width="506.5" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="446.22" y="527.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (34,779,711,420 samples, 99.98%)</title><rect x="10.2" y="1125" width="1179.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.15" y="1135.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (33,801,312,655 samples, 97.17%)</title><rect x="31.7" y="725" width="1146.6" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="34.68" y="735.5" >Board::backtrack</text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (5,019,624 samples, 0.01%)</title><rect x="1148.4" y="597" width="0.2" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="1151.43" y="607.5" ></text>
+</g>
+<g >
+<title>update_process_times (7,612,648 samples, 0.02%)</title><rect x="1010.8" y="421" width="0.2" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="1013.77" y="431.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (27,158,512 samples, 0.08%)</title><rect x="1183.7" y="757" width="1.0" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1186.73" y="767.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (9,218,284 samples, 0.03%)</title><rect x="948.0" y="453" width="0.3" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="950.96" y="463.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (26,843,784,595 samples, 77.17%)</title><rect x="177.5" y="565" width="910.6" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="180.54" y="575.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (486,819,601 samples, 1.40%)</title><rect x="1131.9" y="613" width="16.5" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1134.89" y="623.5" ></text>
+</g>
+<g >
+<title>update_process_times (4,122,302 samples, 0.01%)</title><rect x="1101.3" y="485" width="0.2" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="1104.33" y="495.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (9,393,230 samples, 0.03%)</title><rect x="947.4" y="421" width="0.3" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="950.41" y="431.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (70,987,876 samples, 0.20%)</title><rect x="741.1" y="229" width="2.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.08" y="239.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (63,456,122 samples, 0.18%)</title><rect x="741.2" y="213" width="2.2" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.20" y="223.5" ></text>
+</g>
+<g >
+<title>[ld-linux-x86-64.so.2] (3,138,833 samples, 0.01%)</title><rect x="10.0" y="1237" width="0.1" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="13.00" y="1247.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (1,486,766,614 samples, 4.27%)</title><rect x="1012.0" y="517" width="50.4" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1014.96" y="527.5" >Board..</text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (93,978,935 samples, 0.27%)</title><rect x="750.0" y="277" width="3.2" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="752.97" y="287.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (55,793,460 samples, 0.16%)</title><rect x="741.4" y="133" width="1.9" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.43" y="143.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (4,349,816 samples, 0.01%)</title><rect x="743.5" y="229" width="0.1" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="746.49" y="239.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,780,549,791 samples, 99.98%)</title><rect x="10.2" y="1141" width="1179.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.15" y="1151.5" >Board::backtrack</text>
+</g>
+<g >
+<title>tick_nohz_handler (4,122,302 samples, 0.01%)</title><rect x="1101.3" y="501" width="0.2" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="1104.33" y="511.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (30,456,514 samples, 0.09%)</title><rect x="1186.9" y="965" width="1.0" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1189.86" y="975.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,207,314,949 samples, 98.34%)</title><rect x="22.1" y="757" width="1160.4" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="25.13" y="767.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (707,943,949 samples, 2.04%)</title><rect x="1063.5" y="533" width="24.0" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1066.52" y="543.5" >B..</text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::size (4,274,994 samples, 0.01%)</title><rect x="948.6" y="485" width="0.2" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="951.61" y="495.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (4,910,597 samples, 0.01%)</title><rect x="1062.2" y="501" width="0.2" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="1065.23" y="511.5" ></text>
+</g>
+<g >
+<title>update_process_times (3,284,664 samples, 0.01%)</title><rect x="1148.5" y="533" width="0.1" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="1151.46" y="543.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::size (9,444,077 samples, 0.03%)</title><rect x="1063.2" y="533" width="0.3" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="1066.20" y="543.5" ></text>
+</g>
+<g >
+<title>tick_nohz_handler (4,253,247 samples, 0.01%)</title><rect x="1062.6" y="453" width="0.2" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="1065.63" y="463.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (360,102,441 samples, 1.04%)</title><rect x="1148.7" y="629" width="12.2" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1151.66" y="639.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (51,655,616 samples, 0.15%)</title><rect x="759.8" y="357" width="1.7" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="762.78" y="367.5" ></text>
+</g>
+<g >
+<title>update_process_times (4,947,844 samples, 0.01%)</title><rect x="948.0" y="389" width="0.2" height="15.0" fill="rgb(250,209,50)" rx="2" ry="2" />
+<text  x="951.04" y="399.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (8,437,103 samples, 0.02%)</title><rect x="1186.1" y="869" width="0.3" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1189.15" y="879.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (1,120,760,855 samples, 3.22%)</title><rect x="721.8" y="357" width="38.0" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="724.76" y="367.5" >Boa..</text>
+</g>
+<g >
+<title>Board::backtrack (34,780,549,791 samples, 99.98%)</title><rect x="10.2" y="1157" width="1179.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.15" y="1167.5" >Board::backtrack</text>
+</g>
+<g >
+<title>sched_tick (3,367,575 samples, 0.01%)</title><rect x="1010.4" y="373" width="0.1" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="1013.40" y="383.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::size (4,342,050 samples, 0.01%)</title><rect x="1088.2" y="565" width="0.2" height="15.0" fill="rgb(246,190,45)" rx="2" ry="2" />
+<text  x="1091.22" y="575.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (9,161,669 samples, 0.03%)</title><rect x="884.4" y="373" width="0.3" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="887.40" y="383.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (10,937,954 samples, 0.03%)</title><rect x="1185.0" y="805" width="0.4" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1188.05" y="815.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (89,548,319 samples, 0.26%)</title><rect x="756.6" y="341" width="3.0" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="759.60" y="351.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (756,390,785 samples, 2.17%)</title><rect x="728.9" y="309" width="25.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="731.91" y="319.5" >B..</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (365,386,642 samples, 1.05%)</title><rect x="784.3" y="405" width="12.4" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="787.30" y="415.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (759,813,654 samples, 2.18%)</title><rect x="728.8" y="325" width="25.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="731.79" y="335.5" >B..</text>
+</g>
+<g >
+<title>Board::backtrack (34,685,031,103 samples, 99.71%)</title><rect x="12.0" y="997" width="1176.6" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="15.04" y="1007.5" >Board::backtrack</text>
+</g>
+<g >
+<title>task_tick_fair (4,954,111 samples, 0.01%)</title><rect x="884.9" y="341" width="0.2" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="887.93" y="351.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (1,257,683,530 samples, 3.62%)</title><rect x="718.9" y="373" width="42.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="721.92" y="383.5" >Boar..</text>
+</g>
+<g >
+<title>Board::backtrack (34,511,936,245 samples, 99.21%)</title><rect x="15.4" y="885" width="1170.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="18.45" y="895.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (11,975,574 samples, 0.03%)</title><rect x="1185.7" y="853" width="0.4" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1188.74" y="863.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (4,253,247 samples, 0.01%)</title><rect x="1062.6" y="469" width="0.2" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="1065.63" y="479.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (59,020,990 samples, 0.17%)</title><rect x="754.6" y="325" width="2.0" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="757.57" y="335.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,780,549,791 samples, 99.98%)</title><rect x="10.2" y="1173" width="1179.8" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="13.15" y="1183.5" >Board::backtrack</text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (5,093,029 samples, 0.01%)</title><rect x="1178.0" y="677" width="0.2" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="1180.98" y="687.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (5,093,029 samples, 0.01%)</title><rect x="1178.0" y="661" width="0.2" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="1180.98" y="671.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (3,438,714 samples, 0.01%)</title><rect x="1178.0" y="645" width="0.1" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="1180.98" y="655.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,539,196,008 samples, 99.29%)</title><rect x="14.8" y="933" width="1171.6" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="17.81" y="943.5" >Board::backtrack</text>
+</g>
+<g >
+<title>__hrtimer_run_queues (4,116,489 samples, 0.01%)</title><rect x="1160.9" y="581" width="0.1" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="1163.90" y="591.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (9,911,255 samples, 0.03%)</title><rect x="742.5" y="53" width="0.4" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="745.54" y="63.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (365,386,642 samples, 1.05%)</title><rect x="784.3" y="421" width="12.4" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="787.30" y="431.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (1,794,038,462 samples, 5.16%)</title><rect x="949.7" y="517" width="60.9" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="952.71" y="527.5" >Board:..</text>
+</g>
+<g >
+<title>hrtimer_interrupt (3,239,650 samples, 0.01%)</title><rect x="948.8" y="453" width="0.1" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="951.76" y="463.5" ></text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (8,437,103 samples, 0.02%)</title><rect x="1186.1" y="885" width="0.3" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1189.15" y="895.5" ></text>
+</g>
+<g >
+<title>sched_tick (6,720,836 samples, 0.02%)</title><rect x="884.5" y="325" width="0.2" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="887.48" y="335.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (2,038,266,153 samples, 5.86%)</title><rect x="815.7" y="453" width="69.1" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="818.65" y="463.5" >Board::..</text>
+</g>
+<g >
+<title>Board::backtrack (34,627,317,271 samples, 99.54%)</title><rect x="13.3" y="981" width="1174.6" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="16.29" y="991.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isTileInsertionValid (27,158,512 samples, 0.08%)</title><rect x="1183.7" y="773" width="1.0" height="15.0" fill="rgb(246,189,45)" rx="2" ry="2" />
+<text  x="1186.73" y="783.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (2,243,542,388 samples, 6.45%)</title><rect x="699.1" y="405" width="76.1" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="702.13" y="415.5" >Board::b..</text>
+</g>
+<g >
+<title>tick_nohz_handler (3,438,714 samples, 0.01%)</title><rect x="1178.0" y="629" width="0.1" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="1180.98" y="639.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (47,327,860 samples, 0.14%)</title><rect x="741.7" y="117" width="1.6" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="744.66" y="127.5" ></text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (9,911,255 samples, 0.03%)</title><rect x="742.5" y="37" width="0.4" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="745.54" y="47.5" ></text>
+</g>
+<g >
+<title>std::vector&lt;Tile, std::allocator&lt;Tile&gt; &gt;::operator[] (9,149,784 samples, 0.03%)</title><rect x="885.2" y="469" width="0.3" height="15.0" fill="rgb(210,25,6)" rx="2" ry="2" />
+<text  x="888.16" y="479.5" ></text>
+</g>
+<g >
+<title>__sysvec_apic_timer_interrupt (4,222,112 samples, 0.01%)</title><rect x="784.0" y="373" width="0.2" height="15.0" fill="rgb(242,173,41)" rx="2" ry="2" />
+<text  x="787.05" y="383.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (28,221,118,464 samples, 81.13%)</title><rect x="144.3" y="597" width="957.3" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="147.31" y="607.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (5,910,900,775 samples, 16.99%)</title><rect x="615.1" y="469" width="200.6" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="618.14" y="479.5" >Board::backtrack</text>
+</g>
+<g >
+<title>tick_nohz_handler (3,299,746 samples, 0.01%)</title><rect x="815.2" y="373" width="0.2" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="818.25" y="383.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (34,537,445,792 samples, 99.28%)</title><rect x="14.9" y="917" width="1171.5" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="17.87" y="927.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::backtrack (34,098,005,149 samples, 98.02%)</title><rect x="24.8" y="741" width="1156.7" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="27.83" y="751.5" >Board::backtrack</text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (5,128,175 samples, 0.01%)</title><rect x="796.8" y="405" width="0.2" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="799.78" y="415.5" ></text>
+</g>
+<g >
+<title>tick_nohz_handler (8,333,852 samples, 0.02%)</title><rect x="884.9" y="389" width="0.3" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="887.88" y="399.5" ></text>
+</g>
+<g >
+<title>Board::backtrack (4,242,784,322 samples, 12.20%)</title><rect x="653.3" y="453" width="144.0" height="15.0" fill="rgb(228,106,25)" rx="2" ry="2" />
+<text  x="656.34" y="463.5" >Board::backtrack</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (200,195,925 samples, 0.58%)</title><rect x="1171.2" y="693" width="6.8" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1174.17" y="703.5" ></text>
+</g>
+<g >
+<title>Board::solve (34,780,549,791 samples, 99.98%)</title><rect x="10.2" y="1205" width="1179.8" height="15.0" fill="rgb(239,158,37)" rx="2" ry="2" />
+<text  x="13.15" y="1215.5" >Board::solve</text>
+</g>
+<g >
+<title>Board::isRowInsertionValid (8,568,741 samples, 0.02%)</title><rect x="1185.4" y="821" width="0.3" height="15.0" fill="rgb(251,215,51)" rx="2" ry="2" />
+<text  x="1188.42" y="831.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (3,284,664 samples, 0.01%)</title><rect x="1148.5" y="565" width="0.1" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="1151.46" y="575.5" ></text>
+</g>
+<g >
+<title>[ld-linux-x86-64.so.2] (3,138,833 samples, 0.01%)</title><rect x="10.0" y="1269" width="0.1" height="15.0" fill="rgb(243,178,42)" rx="2" ry="2" />
+<text  x="13.00" y="1279.5" ></text>
+</g>
+<g >
+<title>asm_sysvec_apic_timer_interrupt (4,222,112 samples, 0.01%)</title><rect x="784.0" y="405" width="0.2" height="15.0" fill="rgb(232,127,30)" rx="2" ry="2" />
+<text  x="787.05" y="415.5" ></text>
+</g>
+<g >
+<title>task_tick_fair (5,857,788 samples, 0.02%)</title><rect x="1087.7" y="421" width="0.2" height="15.0" fill="rgb(217,57,13)" rx="2" ry="2" />
+<text  x="1090.73" y="431.5" ></text>
+</g>
+<g >
+<title>__hrtimer_run_queues (8,448,322 samples, 0.02%)</title><rect x="1010.7" y="453" width="0.3" height="15.0" fill="rgb(237,150,35)" rx="2" ry="2" />
+<text  x="1013.74" y="463.5" ></text>
+</g>
+<g >
+<title>sched_tick (4,268,297 samples, 0.01%)</title><rect x="796.8" y="309" width="0.1" height="15.0" fill="rgb(238,155,37)" rx="2" ry="2" />
+<text  x="799.78" y="319.5" ></text>
+</g>
+<g >
+<title>hrtimer_interrupt (5,128,175 samples, 0.01%)</title><rect x="796.8" y="373" width="0.2" height="15.0" fill="rgb(228,109,26)" rx="2" ry="2" />
+<text  x="799.78" y="383.5" ></text>
+</g>
+<g >
+<title>tick_nohz_handler (5,128,175 samples, 0.01%)</title><rect x="796.8" y="341" width="0.2" height="15.0" fill="rgb(248,200,48)" rx="2" ry="2" />
+<text  x="799.78" y="351.5" ></text>
+</g>
+<g >
+<title>sysvec_apic_timer_interrupt (4,910,597 samples, 0.01%)</title><rect x="1062.2" y="485" width="0.2" height="15.0" fill="rgb(220,69,16)" rx="2" ry="2" />
+<text  x="1065.23" y="495.5" ></text>
+</g>
+<g >
+<title>__libc_start_main (34,782,700,218 samples, 99.99%)</title><rect x="10.1" y="1253" width="1179.9" height="15.0" fill="rgb(236,142,34)" rx="2" ry="2" />
+<text  x="13.12" y="1263.5" >__libc_start_main</text>
+</g>
+</g>
+</svg>
