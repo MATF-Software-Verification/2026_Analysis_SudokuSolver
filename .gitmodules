@@ -1,3 +1,6 @@
 [submodule "SudokuSolver"]
 	path = SudokuSolver
 	url = https://github.com/Seng3694/SudokuSolver.git
+[submodule "perf/FlameGraph"]
+	path = perf/FlameGraph
+	url = https://github.com/brendangregg/FlameGraph
