@@ -103,6 +103,11 @@ Ceo izveštaj se može naći u fajlu `anti_backtracking.report`.
 * `Board::translate()` (linija 1155), `std::vector<Tile>::size()` (linija 1159) i `std::vector<Tile>::operator[]()` (linija 1162) su takođe inlinovane, svaka sa manje od 0.4% Children
 * Znači validacione funkcije jesu trošile vreme. Zbog optimizacije ih je kompajler ubacio u telo `backtrack()`, pa na mašinskom nivou  ne postoje kao odvojeni pozivi
 
+### Flame graph  
+Tekstualni frame report je prikazan flame grafom. Grafik se nalazi u `perf/perf-outputs/anti_backtracking.svg`. Grafik se nalazi u `perf/perf-outputs/anti_backtracking.svg`. Vizuelno se vidi jedna uska, vrlo visoka "kula" koju čine ugnježdeni pozivi `Board::backtrack()`.
+
+![Flame graph za anti_backtracking](perf/perf-outputs/anti_backtracking.svg)
+
 ## 4. Clang Static Analyzer (scan-builder)
 
 Kao prvi alat statičke analize korišćen je scan-build koji je deo clang paketa. Scan-build je pokrenut nad celim projektom.
